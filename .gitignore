@@ -1,0 +1,10 @@
+libraries/Adafruit_Circuit_Playground/
+libraries/Adafruit_GFX_Library/
+libraries/Adafruit_SSD1306/
+libraries/AltSoftSerial/
+libraries/RadioHead/
+libraries/rc-switch/
+libraries/Servo/
+libraries/VirtualWire/
+libraries/WiFiEsp/
+libraries/readme
