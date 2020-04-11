@@ -7,9 +7,7 @@
 #define SCREEN_HEIGHT 32 // OLED display height, in pixels
 
 // Declaration for an SSD1306 display connected to I2C (SDA, SCL pins)
-
-#define OLED_RESET -1 // Reset pin # (or -1 if sharing Arduino reset pin)
-
+#define OLED_RESET 4 // Reset pin # (or -1 if sharing Arduino reset pin)
 #define SSD1306_I2C_ADDRESS 0x3C
 
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
@@ -23,26 +21,19 @@ bool initialScan;
 void setup()
 {
   initialScan = true;
-  Wire.begin(0, 2);
-  Serial.begin(9600);
-  delay(2000);
-  // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
-  if (!display.begin(SSD1306_SWITCHCAPVCC, SSD1306_I2C_ADDRESS, false))
-  {
-    Serial.println("SSD1306 allocation failed");
-  }
-  else
-  {
-    Serial.println(F("SSD1306 allocation OK"));
-  }
-
   // Set WiFi to station mode and disconnect from an AP if it was previously connected
   WiFi.mode(WIFI_STA);
   WiFi.disconnect();
+  Wire.begin(0, 2);
 
-  delay(500);
+  delay(2000);
+  // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
+  display.begin(SSD1306_SWITCHCAPVCC, SSD1306_I2C_ADDRESS, false);
+ 
+  delay(2000);
   Send1306Command(0xE4);
   display.clearDisplay();
+  display.display();
 }
 
 void loop()
@@ -90,9 +81,7 @@ void printLeftTopCorner(const char* str)
 ///
 void printSignalStrength(int strength, String ssid)
 {
-
   display.clearDisplay();
-
   int percentStrength = (strength < SSIDStrength::MinRssi) ? SSIDStrength::MinRssi : strength;
   percentStrength = (strength > SSIDStrength::MaxRssi) ? SSIDStrength::MaxRssi : strength;
   float pc = SSIDStrength::CalculateSignalStrengsPercentage(percentStrength);
@@ -118,7 +107,6 @@ void printSignalStrength(int strength, String ssid)
 
   display.display();
 }
-
 
 void Send1306Command(int command)
 {
