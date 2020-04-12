@@ -38,15 +38,22 @@ void loop() {
   long rssi = WiFi.RSSI();
 
   // Write value to Field 1 of a ThingSpeak Channel
-  int httpCode = ThingSpeak.writeField(myChannelNumber, 1, rssi, myWriteAPIKey);
+  int httpCode = 0;
+  int retryCount = 0;
+  do {
+    httpCode = ThingSpeak.writeField(myChannelNumber, 1, rssi, myWriteAPIKey);
 
-  if (httpCode == 200) {
-    Serial.println("Channel write successful.");
-  }
-  else {
-    Serial.println("Problem writing to channel. HTTP error code " + String(httpCode));
-  }
+    if (httpCode != 200) {
+      Serial.println("Problem writing to channel. HTTP error code " + String(httpCode));
+      retryCount++;
+      if (retryCount > 10) {
+        Serial.println("Giving up retry ttempts");
+        break;
+      }
+    }
+    delay (30 * 1000);
 
-  // Wait 30 minutes to update the channel again
-  delay(1000*60*30);
+  } while (httpCode != 200);
+    // Wait 30 minutes to update the channel again
+    delay(1000 * 60 * 30);
 }
