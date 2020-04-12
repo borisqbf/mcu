@@ -35,7 +35,8 @@ void loop() {
   }
 
   // Measure Signal Strength (RSSI) of Wi-Fi connection
-  long rssi = WiFi.RSSI();
+
+  long rssi = getAverageSignalStrength();
 
   // Write value to Field 1 of a ThingSpeak Channel
   int httpCode = 0;
@@ -54,6 +55,15 @@ void loop() {
     delay (30 * 1000);
 
   } while (httpCode != 200);
-    // Wait 30 minutes to update the channel again
-    delay(1000 * 60 * 30);
+  // Wait 30 minutes to update the channel again
+  delay(1000 * 60 * 30);
+}
+
+long getAverageSignalStrength() {
+  long retVal = 0;
+  for (int i = 0; i < 10; i++)  {
+    retVal += WiFi.RSSI();
+    delay (10*1000);
+  }
+  return retVal / 10;
 }
