@@ -14,14 +14,11 @@ WiFiClient  client;
 void setup() {
   Serial.begin(115200);
   delay(100);
-
   WiFi.mode(WIFI_STA);
-
   ThingSpeak.begin(client);
 }
 
-void loop() {
-
+void reportSignalStrength() {
   // Connect or reconnect to WiFi
   if (WiFi.status() != WL_CONNECTED) {
     Serial.print("Attempting to connect to SSID: ");
@@ -35,8 +32,7 @@ void loop() {
   }
 
   // Measure Signal Strength (RSSI) of Wi-Fi connection
-
-  long rssi = getAverageSignalStrength();
+  long rssi = WiFi.RSSI();
 
   // Write value to Field 1 of a ThingSpeak Channel
   int httpCode = 0;
@@ -48,22 +44,16 @@ void loop() {
       Serial.println("Problem writing to channel. HTTP error code " + String(httpCode));
       retryCount++;
       if (retryCount > 10) {
-        Serial.println("Giving up retry ttempts");
+        Serial.println("Giving up retry atempts");
         break;
       }
     }
     delay (30 * 1000);
 
   } while (httpCode != 200);
+}
+void loop() {
+  reportSignalStrength();
   // Wait 30 minutes to update the channel again
   delay(1000 * 60 * 30);
-}
-
-long getAverageSignalStrength() {
-  long retVal = 0;
-  for (int i = 0; i < 10; i++)  {
-    retVal += WiFi.RSSI();
-    delay (10*1000);
-  }
-  return retVal / 10;
 }
