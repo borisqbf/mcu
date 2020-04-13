@@ -58,7 +58,7 @@ void setup() {
   WiFi.mode(WIFI_STA);
   ThingSpeak.begin(client);
   reportSignalStrength();
-  nk_deep_sleep(300e6);
+  nk_deep_sleep(600e6);
 }
 
 void reportSignalStrength() {
