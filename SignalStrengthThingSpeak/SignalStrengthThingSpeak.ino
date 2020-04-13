@@ -1,14 +1,23 @@
-
 #include "ThingSpeak.h"
+#include <ESP8266WiFi.h>
+
+#define ets_wdt_disable ((void (*)(void))0x400030f0)
+#define ets_delay_us ((void (*)(int))0x40002ecc)
+
+#define _R (uint32_t *)0x60000700
 
 unsigned long myChannelNumber = 1036102;
 const char * myWriteAPIKey = "QF3O2AHAVC09JUSZ";
 
-#include <ESP8266WiFi.h>
+
+char ssid[] = "QBF";   // your network SSID (name)
+char pass[] = "!QbfReward00";   // your network password
+
 
 static const uint8_t D5   = 14;
 static const uint8_t D6   = 12;
 static const uint8_t D7   = 13;
+static const uint8_t D0   = 16;
 
 enum LedColour {
   RED,
@@ -16,8 +25,25 @@ enum LedColour {
   BLUE
 };
 
-char ssid[] = "QBF";   // your network SSID (name)
-char pass[] = "!QbfReward00";   // your network password
+
+void nk_deep_sleep(uint64_t time)
+{
+  ets_wdt_disable();
+  *(_R + 4) = 0;
+  *(_R + 17) = 4;
+  *(_R + 1) = *(_R + 7) + 5;
+  *(_R + 6) = 8;
+  *(_R + 2) = 1 << 20;
+  ets_delay_us(10);
+  *(_R + 39) = 0x11;
+  *(_R + 40) = 3;
+  *(_R) &= 0xFCF;
+  *(_R + 1) = *(_R + 7) + (45 * (time >> 8));
+  *(_R + 16) = 0x7F;
+  *(_R + 2) = 1 << 20;
+  __asm volatile ("waiti 0");
+}
+
 
 WiFiClient  client;
 
@@ -31,6 +57,8 @@ void setup() {
   delay(100);
   WiFi.mode(WIFI_STA);
   ThingSpeak.begin(client);
+  reportSignalStrength();
+  nk_deep_sleep(300e6);
 }
 
 void reportSignalStrength() {
@@ -46,7 +74,7 @@ void reportSignalStrength() {
   reportStatus(GREEN, 3);
 
   // Measure Signal Strength (RSSI) of Wi-Fi connection
-  long rssi = WiFi.RSSI();
+  long rssi = averageSignalStrength();
 
   // Write value to Field 1 of a ThingSpeak Channel
   int httpCode = 0;
@@ -71,10 +99,9 @@ void reportSignalStrength() {
 
   } while (httpCode != 200);
 }
+
 void loop() {
-  reportSignalStrength();
-  // Wait 30 minutes to update the channel again
-  delay(1000 *  30);
+
 }
 
 void reportStatus(LedColour c, int n) {
@@ -88,8 +115,18 @@ void reportStatus(LedColour c, int n) {
 
   for (int i = 0; i < n; i++) {
     digitalWrite(pin, LOW);
-    delay(300);
+    delay(100);
     digitalWrite(pin, HIGH);
     delay(500);
   }
+}
+
+long averageSignalStrength() {
+  long retVal = 0;
+  for (int i = 0; i < 10; i++) {
+    retVal += WiFi.RSSI();
+    reportStatus(BLUE, 1);
+    delay(1000);
+  }
+  return retVal / 10;
 }
