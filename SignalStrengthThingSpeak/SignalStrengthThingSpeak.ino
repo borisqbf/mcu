@@ -14,17 +14,13 @@ char ssid[] = "QBF";   // your network SSID (name)
 char pass[] = "!QbfReward00";   // your network password
 
 
-static const uint8_t D5   = 14;
-static const uint8_t D6   = 12;
-static const uint8_t D7   = 13;
-static const uint8_t D0   = 16;
+
 
 enum LedColour {
   RED,
   GREEN,
   BLUE
 };
-
 
 void nk_deep_sleep(uint64_t time)
 {
@@ -58,7 +54,8 @@ void setup() {
   WiFi.mode(WIFI_STA);
   ThingSpeak.begin(client);
   reportSignalStrength();
-  nk_deep_sleep(600e6);
+  nk_deep_sleep(1800e6);
+  //ESP.deepSleep(10e6);
 }
 
 void reportSignalStrength() {
