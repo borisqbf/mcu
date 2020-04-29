@@ -1,5 +1,7 @@
 #include "ThingSpeak.h"
 #include <ESP8266WiFi.h>
+#include <Wire.h>
+#include "LiFuelGauge.h"
 
 #define ets_wdt_disable ((void (*)(void))0x400030f0)
 #define ets_delay_us ((void (*)(int))0x40002ecc)
@@ -8,13 +10,11 @@
 
 unsigned long myChannelNumber = 1036102;
 const char * myWriteAPIKey = "QF3O2AHAVC09JUSZ";
+const int gaugeAddress = 0x76;
 
 
 char ssid[] = "QBF";   // your network SSID (name)
 char pass[] = "!QbfReward00";   // your network password
-
-
-
 
 enum LedColour {
   RED,
@@ -42,8 +42,14 @@ void nk_deep_sleep(uint64_t time)
 
 
 WiFiClient  client;
+LiFuelGauge gauge(MAX17043);
 
 void setup() {
+  
+  Serial.begin(74880);
+  gauge.reset();
+  gauge.quickStart();
+
   pinMode(D5, OUTPUT);
   pinMode(D6, OUTPUT);
   pinMode(D7, OUTPUT);
@@ -72,6 +78,10 @@ void reportSignalStrength() {
 
   // Measure Signal Strength (RSSI) of Wi-Fi connection
   long rssi = averageSignalStrength();
+  float v = gauge.getVoltage();
+  float pc = gauge.getSOC();
+  Serial.println(v);
+  Serial.println(pc);
 
   // Write value to Field 1 of a ThingSpeak Channel
   int httpCode = 0;
@@ -79,7 +89,10 @@ void reportSignalStrength() {
   reportStatus(BLUE, 1);
 
   do {
-    httpCode = ThingSpeak.writeField(myChannelNumber, 1, rssi, myWriteAPIKey);
+    ThingSpeak.setField(1, rssi);
+    ThingSpeak.setField(2, v);
+    ThingSpeak.setField(3, pc);
+    httpCode = ThingSpeak.writeFields(myChannelNumber, myWriteAPIKey);
 
     if (httpCode != 200) {
       reportStatus(RED, 1);
@@ -127,3 +140,5 @@ long averageSignalStrength() {
   }
   return retVal / 10;
 }
+
+void lowPower() {  }
