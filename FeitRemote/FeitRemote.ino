@@ -1,21 +1,85 @@
-#include <arduino.h>
-#define TRANSMITTER_PIN 10
+
+#include <ESP8266WiFi.h>
+#include <PubSubClient.h>
+#include <EEPROM.h>
+
+
+// RF settings
+
 #define zero LOW
 #define one HIGH
-#define N_REPEATS 10000
-#define PULSE1_DURATION 350
-#define PULSE0_DURATION 140
+
+const int N_REPEATS = 10;
+const int TRANSMITTER_PIN = 10;
+const int PULSE1_DURATION = 350;
+const int PULSE0_DURATION = 140;
+
+const char *mqttServer = "homeassistant";
+const int mqttPort = 1883;
+
+const int reportingInterval = 30; //report state every xx seconds
+
+// MQTT
+long lastMsg = 0;
+byte state = 0;
+
+char msg[50];
+const char *ssid = "QBF";   // your network SSID (name)
+const char *pass = "!QbfReward00";   // your network password
+const char *mqttUser = "boris";
+const char *mqttPassword = "HAReward00";
+char *family = "rf-remote";
+String outTopic(family);
+String inTopic(family);
+
+
+// Create an ESP8266 WiFiClient class to connect to the MQTT server.
+WiFiClient client;
+
+// Setup the MQTT client class by passing in the WiFi client and MQTT server and login details.
+PubSubClient mqtt(client);
 
 void setup() {
   Serial.begin(9600);
   pinMode(TRANSMITTER_PIN, OUTPUT);
   digitalWrite(TRANSMITTER_PIN, zero);
+  setupWiFiMQTTClient();
 }
 
-void loop() {
-  int choice = showMenu();
 
-  switch (choice)
+void loop() {
+  mqtt.loop();
+  long now = millis();
+  if (now - lastMsg > reportingInterval * 1000) {
+    lastMsg = now;
+    snprintf (msg, 50, "current state %s", state ? "On" : "Off");
+    Serial.print("Publish message: ");
+    Serial.println(msg);
+    mqtt.publish(outTopic.c_str(), msg);
+  }
+}
+
+void callback(char* topic, byte* payload, unsigned int length) {
+  Serial.print("Message arrived [");
+  Serial.print(topic);
+  Serial.print("] ");
+  char* command = new char[length + 1];
+  for (int i = 0; i < length; i++) {
+    command[i] = (char)payload[i];
+    Serial.print((char)payload[i]);
+  }
+
+  Serial.println();
+  command[length] = '\0';
+
+  byte tempState = decodeCommand(command);
+  if (tempState != state)
+  {
+    state = tempState;
+    EEPROM.write(0, state);
+    EEPROM.commit();
+  }
+  switch (state)
   {
     case 0:
       break;
@@ -26,7 +90,7 @@ void loop() {
       transmit32bitRepeated(0xFBDEEFEC, N_REPEATS); // Off
       break;
     case 3:
-      transmit32bitRepeated(0xFBDEEFDC, N_REPEATS); // minus
+      transmit32bitRepeated(0xFBDEEFDC, N_REPEATS); // Minus
       break;
     case 4:
       transmit32bitRepeated(0xFBDEEFBC, N_REPEATS); // Plus
@@ -38,24 +102,52 @@ void loop() {
       transmit32bitRepeated(0xFBDEEFD5, N_REPEATS); // Down
       break;
     case 7:
-      transmit32bitRepeated(0xFBDEEFD6, N_REPEATS); //pattern
+      transmit32bitRepeated(0xFBDEEFD6, N_REPEATS); // Pattern
       break;
     case 8:
-      transmit32bitRepeated(0xFBDEEFDA, N_REPEATS); //red
+      transmit32bitRepeated(0xFBDEEFDA, N_REPEATS); // Red
       break;
     case 9:
-      transmit32bitRepeated(0xFBDEEFAE, N_REPEATS); //green
+      transmit32bitRepeated(0xFBDEEFAE, N_REPEATS); // Green
       break;
     case 10:
-      transmit32bitRepeated(0xFBDEEFB5, N_REPEATS); //blue
+      transmit32bitRepeated(0xFBDEEFB5, N_REPEATS); // Blue
       break;
     case 11:
-      transmit32bitRepeated(0xFBDEEFBA, N_REPEATS); //white
+      transmit32bitRepeated(0xFBDEEFBA, N_REPEATS); // White
       break;
 defult:
       break;
   }
 }
+
+byte decodeCommand(const char* command)
+{
+  if (strcasecmp(command, "On") == 0)
+    return 1;
+  else if (strcasecmp(command, "Off") == 0)
+    return 2;
+  else if (strcasecmp(command, "Minus") == 0)
+    return 3;
+  else if (strcasecmp(command, "Plus") == 0)
+    return 4;
+  else if (strcasecmp(command, "Up") == 0)
+    return 5;
+  else if (strcasecmp(command, "Down") == 0)
+    return 6;
+  else if (strcasecmp(command, "Pattern") == 0)
+    return 7;
+  else if (strcasecmp(command, "Red") == 0)
+    return 8;
+  else if (strcasecmp(command, "Green") == 0)
+    return 9;
+  else if (strcasecmp(command, "Blue") == 0)
+    return 10;
+  else if (strcasecmp(command, "White") == 0)
+    return 11;
+  else return 0;
+}
+
 
 void transmitOneBit(bool v)
 {
@@ -96,35 +188,36 @@ void transmit32bitRepeated(long v, int nRepeats)
   }
 }
 
-int showMenu()
-{
-  Serial.println("Please enter command:");
-  Serial.println("1 On");
-  Serial.println("2 Off");
-  Serial.println("3 -");
-  Serial.println("4 +");
-  Serial.println("5 Up");
-  Serial.println("6 Down");
-  Serial.println("7 Change Pattern");
-  Serial.println("8 Red");
-  Serial.println("9 Green");
-  Serial.println("10 Blue");
-  Serial.println("11 White");
-  while (Serial.available() == 0) {
-    /* do nothing */
-  }
-  while (Serial.available())
+
+void   setupWiFiMQTTClient() {
+  WiFi.begin(ssid, pass);
+  while (WiFi.status() != WL_CONNECTED)
   {
-    String ch = Serial.readString();// read the incoming data as string
-    int selection = ch.toInt();
-    if ((selection < 1) || (selection > 11))
-    {
-      Serial.println("Incorrect command: " + ch);
-    }
-    else
-    {
-      Serial.println("Executing command: " + ch);
-      return selection;
+    delay(500);
+    Serial.print("*");
+  }
+
+  Serial.println("WiFi connection Successful");
+  Serial.print("The IP Address of ESP8266 Module is: ");
+  Serial.println(WiFi.localIP());// Print the IP address
+  // Now we can publish stuff!
+  mqtt.setServer(mqttServer, mqttPort);
+  mqtt.setCallback(callback);
+
+  while (!mqtt.connected()) {
+    Serial.println("Connecting to MQTT Server...");
+    String clientId(family);
+    clientId += String(" - ");
+    clientId += String(random(0xffff), HEX);
+
+    if (mqtt.connect(clientId.c_str(), mqttUser, mqttPassword)) {
+      Serial.println("Connected");
+    } else {
+      Serial.print("Failed with state ");
+      Serial.println(mqtt.state());
     }
   }
+  mqtt.publish(outTopic.c_str(), "I am alive");
+
+  mqtt.subscribe(inTopic.c_str());
 }
