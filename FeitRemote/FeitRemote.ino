@@ -44,6 +44,9 @@ void setup() {
   pinMode(TRANSMITTER_PIN, OUTPUT);
   digitalWrite(TRANSMITTER_PIN, zero);
   setupWiFiMQTTClient();
+  EEPROM.begin(4);
+  state = EEPROM.read(0);
+  transmitCommand(state);
 }
 
 
@@ -79,60 +82,10 @@ void callback(char* topic, byte* payload, unsigned int length) {
     EEPROM.write(0, state);
     EEPROM.commit();
   }
-  switch (state)
-  {
-    case 0:
-      break;
-    case 1:
-      transmit32bitRepeated(0xFBDEEFF4, N_REPEATS); // On
-      break;
-    case 2:
-      transmit32bitRepeated(0xFBDEEFEC, N_REPEATS); // Off
-      break;
-    case 3:
-      transmit32bitRepeated(0xFBDEEFDC, N_REPEATS); // Minus
-      break;
-    case 4:
-      transmit32bitRepeated(0xFBDEEFBC, N_REPEATS); // Plus
-      break;
-    case 5:
-      transmit32bitRepeated(0xFBDEEFEA, N_REPEATS); // Up
-      break;
-    case 6:
-      transmit32bitRepeated(0xFBDEEFD5, N_REPEATS); // Down
-      break;
-    case 7:
-      transmit32bitRepeated(0xFBDEEFD6, N_REPEATS); // Pattern
-      break;
-    case 8:
-      transmit32bitRepeated(0xFBDEEFF4, N_REPEATS); // On
-      delay(1000);
-      transmit32bitRepeated(0xFBDEEFDA, N_REPEATS); // Red
-      break;
-    case 9:
-      transmit32bitRepeated(0xFBDEEFF4, N_REPEATS); // On
-      delay(1000);
-      transmit32bitRepeated(0xFBDEEFAE, N_REPEATS); // Green
-      break;
-    case 10:
-      transmit32bitRepeated(0xFBDEEFF4, N_REPEATS); // On
-      delay(1000);
-      transmit32bitRepeated(0xFBDEEFB5, N_REPEATS); // Blue
-      break;
-    case 11:
-      transmit32bitRepeated(0xFBDEEFF4, N_REPEATS); // On
-      delay(1000);
-      transmit32bitRepeated(0xFBDEEFBA, N_REPEATS); // White
-      break;
-defult:
-      break;
-  }
-  snprintf (msg, 50, "current state %s", state2String(state));
-  mqtt.publish(outTopic.c_str(), msg);
+  transmitCommand(state);
 }
 
-byte decodeCommand(const char* command)
-{
+byte decodeCommand(const char* command) {
   if (strcasecmp(command, "On") == 0)
     return 1;
   else if (strcasecmp(command, "Off") == 0)
@@ -200,8 +153,61 @@ defult:
       break;
   }
 }
-void transmitOneBit(bool v)
-{
+
+void transmitCommand(int state) {
+  switch (state)
+  {
+    case 0:
+      break;
+    case 1:
+      transmit32bitRepeated(0xFBDEEFF4, N_REPEATS); // On
+      break;
+    case 2:
+      transmit32bitRepeated(0xFBDEEFEC, N_REPEATS); // Off
+      break;
+    case 3:
+      transmit32bitRepeated(0xFBDEEFDC, N_REPEATS); // Minus
+      break;
+    case 4:
+      transmit32bitRepeated(0xFBDEEFBC, N_REPEATS); // Plus
+      break;
+    case 5:
+      transmit32bitRepeated(0xFBDEEFEA, N_REPEATS); // Up
+      break;
+    case 6:
+      transmit32bitRepeated(0xFBDEEFD5, N_REPEATS); // Down
+      break;
+    case 7:
+      transmit32bitRepeated(0xFBDEEFD6, N_REPEATS); // Pattern
+      break;
+    case 8:
+      transmit32bitRepeated(0xFBDEEFF4, N_REPEATS); // On
+      delay(1000);
+      transmit32bitRepeated(0xFBDEEFDA, N_REPEATS); // Red
+      break;
+    case 9:
+      transmit32bitRepeated(0xFBDEEFF4, N_REPEATS); // On
+      delay(1000);
+      transmit32bitRepeated(0xFBDEEFAE, N_REPEATS); // Green
+      break;
+    case 10:
+      transmit32bitRepeated(0xFBDEEFF4, N_REPEATS); // On
+      delay(1000);
+      transmit32bitRepeated(0xFBDEEFB5, N_REPEATS); // Blue
+      break;
+    case 11:
+      transmit32bitRepeated(0xFBDEEFF4, N_REPEATS); // On
+      delay(1000);
+      transmit32bitRepeated(0xFBDEEFBA, N_REPEATS); // White
+      break;
+defult:
+      break;
+  }
+  snprintf (msg, 50, "current state %s", state2String(state));
+  mqtt.publish(outTopic.c_str(), msg);
+}
+
+void transmitOneBit(bool v) {
   if (v)
   {
     digitalWrite(TRANSMITTER_PIN, one);
@@ -218,8 +224,7 @@ void transmitOneBit(bool v)
 
 
 // Transmits 32 bit int value
-void transmit32bit(long v)
-{
+void transmit32bit(long v) {
   digitalWrite(TRANSMITTER_PIN, zero);
   unsigned long mask = 0x80000000;
   for (int i = 0; i < 32; i++)
@@ -230,8 +235,7 @@ void transmit32bit(long v)
   }
 }
 
-void transmit32bitRepeated(long v, int nRepeats)
-{
+void transmit32bitRepeated(long v, int nRepeats) {
   for (int i = 0; i < nRepeats; i++)
   {
     transmit32bit(v);
