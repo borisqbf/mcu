@@ -6,11 +6,11 @@
 
 // RF settings
 
-#define zero LOW
-#define one HIGH
+#define zero HIGH
+#define one LOW
 
 const int N_REPEATS = 10;
-const int TRANSMITTER_PIN = 10;
+const int TRANSMITTER_PIN = 2;
 const int PULSE1_DURATION = 350;
 const int PULSE0_DURATION = 140;
 
@@ -52,7 +52,7 @@ void loop() {
   long now = millis();
   if (now - lastMsg > reportingInterval * 1000) {
     lastMsg = now;
-    snprintf (msg, 50, "current state %s", state ? "On" : "Off");
+    snprintf (msg, 50, "current state %s", state2String(state));
     Serial.print("Publish message: ");
     Serial.println(msg);
     mqtt.publish(outTopic.c_str(), msg);
@@ -105,20 +105,30 @@ void callback(char* topic, byte* payload, unsigned int length) {
       transmit32bitRepeated(0xFBDEEFD6, N_REPEATS); // Pattern
       break;
     case 8:
+      transmit32bitRepeated(0xFBDEEFF4, N_REPEATS); // On
+      delay(1000);
       transmit32bitRepeated(0xFBDEEFDA, N_REPEATS); // Red
       break;
     case 9:
+      transmit32bitRepeated(0xFBDEEFF4, N_REPEATS); // On
+      delay(1000);
       transmit32bitRepeated(0xFBDEEFAE, N_REPEATS); // Green
       break;
     case 10:
+      transmit32bitRepeated(0xFBDEEFF4, N_REPEATS); // On
+      delay(1000);
       transmit32bitRepeated(0xFBDEEFB5, N_REPEATS); // Blue
       break;
     case 11:
+      transmit32bitRepeated(0xFBDEEFF4, N_REPEATS); // On
+      delay(1000);
       transmit32bitRepeated(0xFBDEEFBA, N_REPEATS); // White
       break;
 defult:
       break;
   }
+  snprintf (msg, 50, "current state %s", state2String(state));
+  mqtt.publish(outTopic.c_str(), msg);
 }
 
 byte decodeCommand(const char* command)
@@ -148,7 +158,48 @@ byte decodeCommand(const char* command)
   else return 0;
 }
 
-
+const char* state2String(int state) {
+  switch (state)
+  {
+    case 0:
+      return "Empty";
+    case 1:
+      return "On";
+      break;
+    case 2:
+      return "Off";
+      break;
+    case 3:
+      return "Minus";
+      break;
+    case 4:
+      return "Plus";
+      break;
+    case 5:
+      return "Up";
+      break;
+    case 6:
+      return "Down";
+      break;
+    case 7:
+      return "Pattern";
+      break;
+    case 8:
+      return "Red";
+      break;
+    case 9:
+      return "Green";
+      break;
+    case 10:
+      return "Blue";
+      break;
+    case 11:
+      return "White";
+      break;
+defult:
+      break;
+  }
+}
 void transmitOneBit(bool v)
 {
   if (v)
@@ -190,6 +241,10 @@ void transmit32bitRepeated(long v, int nRepeats)
 
 
 void   setupWiFiMQTTClient() {
+
+  outTopic += "/sideyard/state";
+  inTopic += "/sideyard/command";
+
   WiFi.begin(ssid, pass);
   while (WiFi.status() != WL_CONNECTED)
   {
