@@ -3,16 +3,15 @@
 #include <PubSubClient.h>
 #include <EEPROM.h>
 
-
 // RF settings
-
+// inverse polarity 
 #define zero HIGH
 #define one LOW
 
-const int N_REPEATS = 10;
+const int N_REPEATS = 100;
 const int TRANSMITTER_PIN = 2;
-const int PULSE1_DURATION = 350;
-const int PULSE0_DURATION = 140;
+const int PULSE1_DURATION = 340;
+const int PULSE0_DURATION = 180;
 
 const char *mqttServer = "homeassistant";
 const int mqttPort = 1883;
@@ -216,7 +215,7 @@ void transmitOneBit(bool v) {
   else
   {
     digitalWrite(TRANSMITTER_PIN, zero);
-    delayMicroseconds(PULSE0_DURATION);
+    delayMicroseconds(PULSE1_DURATION);
   }
   digitalWrite(TRANSMITTER_PIN, zero);
   delayMicroseconds(PULSE0_DURATION);
@@ -239,13 +238,12 @@ void transmit32bitRepeated(long v, int nRepeats) {
   for (int i = 0; i < nRepeats; i++)
   {
     transmit32bit(v);
-    delayMicroseconds(5000);
+    delay(4);
   }
 }
 
 
 void   setupWiFiMQTTClient() {
-
   outTopic += "/sideyard/state";
   inTopic += "/sideyard/command";
 
