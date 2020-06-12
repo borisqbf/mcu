@@ -4,7 +4,7 @@
 #include <EEPROM.h>
 
 // RF settings
-// inverse polarity 
+// inverse polarity
 #define zero HIGH
 #define one LOW
 
@@ -27,7 +27,7 @@ const char *ssid = "QBF";   // your network SSID (name)
 const char *pass = "!QbfReward00";   // your network password
 const char *mqttUser = "boris";
 const char *mqttPassword = "HAReward00";
-char *family = "rf-remote";
+char *family =  "rf-remote";
 String outTopic(family);
 String inTopic(family);
 
@@ -75,13 +75,13 @@ void callback(char* topic, byte* payload, unsigned int length) {
   command[length] = '\0';
 
   byte tempState = decodeCommand(command);
+  transmitCommand(tempState);
   if (tempState != state)
   {
     state = tempState;
     EEPROM.write(0, state);
     EEPROM.commit();
   }
-  transmitCommand(state);
 }
 
 byte decodeCommand(const char* command) {
@@ -156,8 +156,6 @@ defult:
 void transmitCommand(int state) {
   switch (state)
   {
-    case 0:
-      break;
     case 1:
       transmit32bitRepeated(0xFBDEEFF4, N_REPEATS); // On
       break;
@@ -200,6 +198,7 @@ void transmitCommand(int state) {
       transmit32bitRepeated(0xFBDEEFBA, N_REPEATS); // White
       break;
 defult:
+      transmit32bitRepeated(0xFBDEEFEC, N_REPEATS); // Off
       break;
   }
   snprintf (msg, 50, "current state %s", state2String(state));
