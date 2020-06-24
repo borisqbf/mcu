@@ -8,10 +8,10 @@
 #define zero HIGH
 #define one LOW
 
-const int N_REPEATS = 100;
+const int N_REPEATS = 30;
 const int TRANSMITTER_PIN = 2;
-const int PULSE1_DURATION = 340;
-const int PULSE0_DURATION = 180;
+const int PULSE1_DURATION = 400;
+const int PULSE0_DURATION = 80;
 
 const char *mqttServer = "homeassistant";
 const int mqttPort = 1883;
