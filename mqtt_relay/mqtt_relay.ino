@@ -31,7 +31,7 @@ void setup()
   pinMode(relayPin, OUTPUT);
   EEPROM.begin(4);
   state = EEPROM.read(0);
-  digitalWrite(relayPin, state ? LOW : HIGH);
+  digitalWrite(relayPin, state ? LOW : HIGH); //High output - relay is off
 
   outTopic += "/frontyard/state";
   inTopic += "/frontyard/command";
@@ -67,18 +67,21 @@ void loop()
       mqtt.publish(outTopic.c_str(), msg);
     else
     {
+      Serial.println("MQTT connection lost - reconnecting");
       if (!connecttoMqtt())
       {
-        digitalWrite(relayPin, state ? LOW : HIGH);
+        Serial.println("Reconnect failed - turning off the relay");
+        digitalWrite(relayPin, HIGH);
         state = 0;
         EEPROM.write(0, state);
         EEPROM.commit();
       }
       else
       {
+        Serial.print("Reconnection successfull - Publish message: ");
+        Serial.println(msg);
         mqtt.publish(outTopic.c_str(), msg);
       }
-      
     }
   }
 }
