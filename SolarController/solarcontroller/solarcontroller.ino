@@ -1,5 +1,10 @@
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
+#include <time.h>
+#include <TZ.h>
+#include <FS.h>
+#include <LittleFS.h>
+#include <CertStoreBearSSL.h>
 
 #pragma region general definitions
 const uint8_t TOGGLE_PIN = 14;
@@ -26,8 +31,13 @@ unsigned long lastPressed = 0;
 char msg[50];
 const char *ssid = "QBF";          // your network SSID (name)
 const char *pass = "!QbfReward00"; // your network password
+
+// A single, global CertStore which can be used by all connections.
+// Needs to stay live the entire time any of the WiFiClientBearSSLs
+// are present.
+BearSSL::CertStore certStore;
 // Create an ESP8266 WiFiClient class to connect to the MQTT server.
-WiFiClient client;
+WiFiClientSecure client;
 #pragma endregion
 
 #pragma region MQTT
@@ -39,11 +49,11 @@ const int reportingInterval = 5 * 60; // report state every xx seconds
 
 // MQTT Settings
 const char *mqttUser = "boris_qbf";
-const char *mqttPassword = "HiveReward00";
+const char *mqttPassword = "mqttReward00";
 const char *family = "solar";
 String outTopic(family);
 // Setup the MQTT client class by passing in the WiFi client and MQTT server and login details.
-PubSubClient mqtt(client);
+PubSubClient *mqtt;
 
 #pragma endregion
 
@@ -65,9 +75,9 @@ void Blink(LedColour c)
   else if (c == GREEN)
     pin = GREEN_LED_PIN;
 
-  digitalWrite(pin, pin == RED_LED_PIN ? LOW : HIGH);
-  delay(300);
   digitalWrite(pin, pin == RED_LED_PIN ? HIGH : LOW);
+  delay(300);
+  digitalWrite(pin, pin == RED_LED_PIN ? LOW : HIGH);
   delay(500);
 }
 
@@ -79,9 +89,9 @@ void LEDOnOff(LedColour c, bool on = true)
   else if (c == GREEN)
     pin = GREEN_LED_PIN;
   if (on)
-    digitalWrite(pin, pin == RED_LED_PIN ? LOW : HIGH);
-  else
     digitalWrite(pin, pin == RED_LED_PIN ? HIGH : LOW);
+  else
+    digitalWrite(pin, pin == RED_LED_PIN ? LOW : HIGH);
 }
 
 void ReportError(uint8_t errorCode)
@@ -90,6 +100,7 @@ void ReportError(uint8_t errorCode)
   {
     Blink(RED);
   }
+  LEDOnOff(RED);
 }
 
 void ReportWiFi(uint8_t status)
@@ -137,24 +148,24 @@ void ICACHE_RAM_ATTR IntCallback()
 
 bool connect2Mqtt()
 {
-  while (!mqtt.connected())
+  while (!mqtt->connected())
   {
     Serial.println("Connecting to MQTT Server...");
     String clientId(family);
     clientId += String(" - ");
     clientId += String(random(0xff), HEX);
 
-    if (mqtt.connect(clientId.c_str(), mqttUser, mqttPassword))
+    if (mqtt->connect(clientId.c_str(), mqttUser, mqttPassword))
     {
       Serial.println("Connected");
-      mqtt.publish(outTopic.c_str(), "I am alive");
+      mqtt->publish(outTopic.c_str(), "I am alive");
       return true;
     }
     else
     {
       Serial.print("Failed with state ");
-      Serial.println(mqtt.state());
-      ReportError(mqttError);
+      Serial.println(mqtt->state());
+      ReportError(-1 * mqtt->state());
       return false;
     }
   }
@@ -173,11 +184,55 @@ void SetupWiFiMQTTClient()
   Serial.print("The IP Address of ESP8266 Module is: ");
   Serial.println(WiFi.localIP()); // Print the IP address
   ReportWiFi(wifiConnected);
-
+  randomSeed(micros());
+  SetDateTime();
   // IP address could have been change - update mqtt client
-  mqtt.setServer(mqttServer, mqttPort);
+
+  int numCerts = certStore.initCertStore(LittleFS, PSTR("/certs.idx"), PSTR("/certs.ar"));
+  Serial.printf("Number of CA certs read: %d\n", numCerts);
+  if (numCerts == 0)
+  {
+    Serial.printf("No certs found. Did you run certs-from-mozilla.py and upload the LittleFS directory before running?\n");
+    return; // Can't connect to anything w/o certs!
+  }
+
+  BearSSL::WiFiClientSecure *bear = new BearSSL::WiFiClientSecure();
+  // Integrate the cert store with this connection
+  bear->setCertStore(&certStore);
+
+  mqtt = new PubSubClient(*bear);
+
+  mqtt->setServer(mqttServer, mqttPort);
 
   connect2Mqtt();
+}
+
+void InitLEDs()
+{
+  digitalWrite(RED_LED_PIN, LOW);
+  digitalWrite(BLUE_LED_PIN, HIGH);
+  digitalWrite(GREEN_LED_PIN, HIGH);
+}
+
+void SetDateTime()
+{
+  // You can use your own timezone, but the exact time is not used at all.
+  // Only the date is needed for validating the certificates.
+  configTime(TZ_Australia_Melbourne, "pool.ntp.org", "time.nist.gov");
+
+  Serial.print("Waiting for NTP time sync: ");
+  time_t now = time(nullptr);
+  while (now < 8 * 3600 * 2)
+  {
+    delay(100);
+    Serial.print(".");
+    now = time(nullptr);
+  }
+  Serial.println();
+
+  struct tm timeinfo;
+  gmtime_r(&now, &timeinfo);
+  Serial.printf("%s %s", tzname[0], asctime(&timeinfo));
 }
 
 void setup()
@@ -190,12 +245,13 @@ void setup()
   digitalWrite(RELAY_PIN, HIGH);
 
   pinMode(RED_LED_PIN, OUTPUT);
-  digitalWrite(RED_LED_PIN, HIGH);
 
   pinMode(BLUE_LED_PIN, OUTPUT);
   pinMode(GREEN_LED_PIN, OUTPUT);
-
+  InitLEDs();
   attachInterrupt(digitalPinToInterrupt(TOGGLE_PIN), IntCallback, RISING);
+  LittleFS.begin();
+
   SetupWiFiMQTTClient();
 }
 
