@@ -15,6 +15,10 @@ const uint8_t RED_LED_PIN = 15;
 const uint8_t BLUE_LED_PIN = 2;
 const uint8_t GREEN_LED_PIN = 0;
 
+const int pollingPeriodicity = 3 * 60 * 1000; // in milliseconds
+
+unsigned int lastTimeTelemetrySent;
+
 enum LedColour : byte
 {
   RED,
@@ -52,7 +56,7 @@ const char *mqttUser = "boris_qbf";
 const char *mqttPassword = "mqttReward00";
 const char *family = "solar";
 String outTopic(family);
-// Setup the MQTT client class by passing in the WiFi client and MQTT server and login details.
+
 PubSubClient *mqtt;
 
 #pragma endregion
@@ -64,6 +68,7 @@ const uint8_t wifiConnected = 0;
 const uint8_t wifiError = 1;
 
 const uint8_t mqttError = 3;
+const uint8_t mqttSentOK = 5;
 
 #pragma endregion
 
@@ -101,6 +106,14 @@ void ReportError(uint8_t errorCode)
     Blink(RED);
   }
   LEDOnOff(RED);
+}
+
+void ReportStatus(uint8_t status)
+{
+  for (uint8_t i = 0; i < errorCode; i++)
+  {
+    Blink(GREEN);
+  }
 }
 
 void ReportWiFi(uint8_t status)
@@ -146,8 +159,27 @@ void ICACHE_RAM_ATTR IntCallback()
   }
 }
 
-bool connect2Mqtt()
+bool Connect2Mqtt()
 {
+  randomSeed(micros());
+  SetDateTime();
+  // IP address could have been change - update mqtt client
+
+  int numCerts = certStore.initCertStore(LittleFS, PSTR("/certs.idx"), PSTR("/certs.ar"));
+  Serial.printf("Number of CA certs read: %d\n", numCerts);
+  if (numCerts == 0)
+  {
+    Serial.printf("No certs found. Did you run certs-from-mozilla.py and upload the LittleFS directory before running?\n");
+    return false; // Can't connect to anything w/o certs!
+  }
+
+  BearSSL::WiFiClientSecure *bear = new BearSSL::WiFiClientSecure();
+  // Integrate the cert store with this connection
+  bear->setCertStore(&certStore);
+
+  mqtt = new PubSubClient(*bear);
+
+  mqtt->setServer(mqttServer, mqttPort);
   while (!mqtt->connected())
   {
     Serial.println("Connecting to MQTT Server...");
@@ -171,7 +203,7 @@ bool connect2Mqtt()
   }
 }
 
-void SetupWiFiMQTTClient()
+void SetupWiFiClient()
 {
   WiFi.begin(ssid, pass);
   while (WiFi.status() != WL_CONNECTED)
@@ -184,27 +216,6 @@ void SetupWiFiMQTTClient()
   Serial.print("The IP Address of ESP8266 Module is: ");
   Serial.println(WiFi.localIP()); // Print the IP address
   ReportWiFi(wifiConnected);
-  randomSeed(micros());
-  SetDateTime();
-  // IP address could have been change - update mqtt client
-
-  int numCerts = certStore.initCertStore(LittleFS, PSTR("/certs.idx"), PSTR("/certs.ar"));
-  Serial.printf("Number of CA certs read: %d\n", numCerts);
-  if (numCerts == 0)
-  {
-    Serial.printf("No certs found. Did you run certs-from-mozilla.py and upload the LittleFS directory before running?\n");
-    return; // Can't connect to anything w/o certs!
-  }
-
-  BearSSL::WiFiClientSecure *bear = new BearSSL::WiFiClientSecure();
-  // Integrate the cert store with this connection
-  bear->setCertStore(&certStore);
-
-  mqtt = new PubSubClient(*bear);
-
-  mqtt->setServer(mqttServer, mqttPort);
-
-  connect2Mqtt();
 }
 
 void InitLEDs()
@@ -250,9 +261,11 @@ void setup()
   pinMode(GREEN_LED_PIN, OUTPUT);
   InitLEDs();
   attachInterrupt(digitalPinToInterrupt(TOGGLE_PIN), IntCallback, RISING);
-  LittleFS.begin();
 
-  SetupWiFiMQTTClient();
+  SetupWiFiClient();
+
+  LittleFS.begin();
+  Connect2Mqtt();
 }
 
 void loop()
@@ -260,6 +273,13 @@ void loop()
   if (WiFi.status() != WL_CONNECTED)
   {
     ReportWiFi(wifiError);
-    SetupWiFiMQTTClient();
+    SetupWiFiClient();
+  }
+
+  if (millis() - lastTimeTelemetrySent > pollingPeriodicity)
+  {
+    mqtt->publish(outTopic.c_str(), "I am alive");
+    lastTimeTelemetrySent = millis();
+    ReportStatus(mqttSentOK);
   }
 }
