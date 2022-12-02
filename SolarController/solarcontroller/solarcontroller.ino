@@ -17,7 +17,7 @@ const uint8_t GREEN_LED_PIN = 0;
 
 const int pollingPeriodicity = 3 * 60 * 1000; // in milliseconds
 
-unsigned int lastTimeTelemetrySent;
+unsigned long lastTimeTelemetrySent;
 
 enum LedColour : byte
 {
@@ -110,7 +110,7 @@ void ReportError(uint8_t errorCode)
 
 void ReportStatus(uint8_t status)
 {
-  for (uint8_t i = 0; i < errorCode; i++)
+  for (uint8_t i = 0; i < status; i++)
   {
     Blink(GREEN);
   }
@@ -270,16 +270,18 @@ void setup()
 
 void loop()
 {
+  mqtt->loop();
   if (WiFi.status() != WL_CONNECTED)
   {
     ReportWiFi(wifiError);
     SetupWiFiClient();
   }
 
-  if (millis() - lastTimeTelemetrySent > pollingPeriodicity)
+  if ((millis() - lastTimeTelemetrySent) > pollingPeriodicity)
   {
-    mqtt->publish(outTopic.c_str(), "I am alive");
+    mqtt->publish(outTopic.c_str(), "Periodic poll");
     lastTimeTelemetrySent = millis();
+    Serial.println("Peiodic sent");
     ReportStatus(mqttSentOK);
   }
 }
