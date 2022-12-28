@@ -25,8 +25,13 @@ enum LedColour : byte
   BLUE,
   GREEN
 };
+enum PowerMode : byte
+{
+    OnSolar = 0,
+    OnMain = 1
+};
 
-uint8_t mode = 0;
+PowerMode mode = OnSolar;
 unsigned long lastPressed = 0;
 #pragma endregion
 
@@ -132,16 +137,16 @@ void ReportWiFi(uint8_t status)
 }
 
 void ToggleMode()
-{
-  if (mode == 0)
+{ 
+  if (mode == OnSolar)
   {
-    mode = 1;
+    mode = OnMain;
     digitalWrite(MODE_PIN, LOW);
     digitalWrite(RELAY_PIN, LOW);
   }
   else
   {
-    mode = 0;
+    mode = OnSolar;
     digitalWrite(MODE_PIN, HIGH);
     digitalWrite(RELAY_PIN, HIGH);
   }
@@ -149,9 +154,11 @@ void ToggleMode()
 
 void ICACHE_RAM_ATTR IntCallback()
 {
+  long int m =  millis();
+  Serial.printf("Got interupt. Millis %ld\n",m);
   if (digitalRead(MANUAL_PIN))
   {
-    if (millis() - lastPressed > 300)
+    if (millis() - lastPressed > 400)
     {
       ToggleMode();
     }
@@ -223,6 +230,7 @@ void InitLEDs()
   digitalWrite(RED_LED_PIN, LOW);
   digitalWrite(BLUE_LED_PIN, HIGH);
   digitalWrite(GREEN_LED_PIN, HIGH);
+  digitalWrite(MODE_PIN, HIGH); // Initial state is on solar so green LED is on
 }
 
 void SetDateTime()
