@@ -158,7 +158,16 @@ const uint8_t wifiConnecting = 3;
 const uint8_t wifiConnected = 0;
 const uint8_t wifiError = 1;
 const uint8_t mqttError = 3;
-const uint8_t modbusError = 10;
+const uint8_t modbusUnknownError = 10;
+const uint8_t modbusIllegalDataAddressError = 10;
+const uint8_t modbusIllegalDataValueError = 11;
+const uint8_t modbusSlaveDeviceFailure = 12;
+const uint8_t modbusIllegalFunctionError = 13;
+const uint8_t modbusnvalidSlaveIDError = 14;
+const uint8_t modbusInvalidFunction = 15;
+const uint8_t modbusResponseTimedOutError = 16;
+const uint8_t modbusInvalidCRCError = 17;
+
 
 const uint8_t modbusReadOK = 1;
 const uint8_t mqttSentOK = 3;
@@ -369,42 +378,42 @@ void HandleModbusError(uint8_t errorCode)
   {
   case node.ku8MBIllegalDataAddress:
     Serial.println("Illegal data address");
-    ReportError(modbusError + errorCode);
+    ReportError(modbusIllegalDataAddressError);
     break;
   case node.ku8MBIllegalDataValue:
     Serial.println("Illegal data value");
-    ReportError(modbusError + errorCode);
+    ReportError(modbusIllegalDataValueError);
     break;
   case node.ku8MBIllegalFunction:
     Serial.println("Illegal function");
-    ReportError(modbusError + errorCode);
+    ReportError(modbusIllegalFunctionError);
     break;
   case node.ku8MBSlaveDeviceFailure:
     Serial.println("Slave device failure");
-    ReportError(modbusError + errorCode);
+    ReportError(modbusSlaveDeviceFailure);
     break;
   case node.ku8MBSuccess:
     Serial.println("Success");
     break;
   case node.ku8MBInvalidSlaveID:
     Serial.println("Invalid slave ID: The slave ID in the response does not match that of the request.");
-    ReportError(modbusError + errorCode);
+    ReportError(modbusnvalidSlaveIDError);
     break;
   case node.ku8MBInvalidFunction:
     Serial.println("Invalid function: The function code in the response does not match that of the request.");
-    ReportError(modbusError + errorCode);
+    ReportError(modbusInvalidFunction);
     break;
   case node.ku8MBResponseTimedOut:
     Serial.println("Response timed out");
-    ReportError(modbusError + errorCode);
+    ReportError(modbusResponseTimedOutError);
     break;
   case node.ku8MBInvalidCRC:
     Serial.println("InvalidCRC");
-    ReportError(modbusError + errorCode);
+    ReportError(modbusInvalidCRCError);
     break;
   default:
     Serial.println("Unknown error");
-    ReportError(modbusError);
+    ReportError(modbusUnknownError);
     break;
   }
 }
