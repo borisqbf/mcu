@@ -5,7 +5,7 @@
 #include <FS.h>
 #include <LittleFS.h>
 #include <CertStoreBearSSL.h>
-#include <SoftwareSerial.h>
+
 #include <ModbusMaster.h>
 
 #pragma region general definitions
@@ -16,8 +16,8 @@ const uint8_t RELAY_PIN = 13;
 const uint8_t RED_LED_PIN = 15;
 const uint8_t BLUE_LED_PIN = 2;
 const uint8_t GREEN_LED_PIN = 0;
-const uint8_t SOFT_RX_PIN = 5;
-const uint8_t SOFT_TX_PIN = 4;
+// const uint8_t SOFT_RX_PIN = 5;
+// const uint8_t SOFT_TX_PIN = 4;
 
 enum LedColour : byte
 {
@@ -113,7 +113,7 @@ const uint8_t modbus_address = 255;
 const int modbusBaudRate = 9600;
 const int modbusPollingPeriodicity = 30 * 1000; // in milliseconds;
 unsigned long lastTimeRenogyPolled = 0;
-SoftwareSerial modBusSerial(SOFT_RX_PIN, SOFT_TX_PIN);
+
 ModbusMaster node;
 
 #pragma endregion
@@ -368,8 +368,7 @@ void SetDateTime()
 
 void SetupModbus()
 {
-  modBusSerial.begin(modbusBaudRate);
-  node.begin(modbus_address, modBusSerial);
+  node.begin(modbus_address, Serial);
 }
 
 void HandleModbusError(uint8_t errorCode)
@@ -644,8 +643,8 @@ void setup()
   InitLEDs();
   attachInterrupt(digitalPinToInterrupt(TOGGLE_PIN), IntCallback, RISING);
 
-  pinMode(SOFT_RX_PIN, INPUT);
-  pinMode(SOFT_TX_PIN, OUTPUT);
+  // pinMode(SOFT_RX_PIN, INPUT);
+  // pinMode(SOFT_TX_PIN, OUTPUT);
 
   SetupModbus();
 
