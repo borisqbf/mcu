@@ -14,10 +14,8 @@ const uint8_t MANUAL_PIN = 16;
 const uint8_t MODE_PIN = 12;
 const uint8_t RELAY_PIN = 13;
 const uint8_t RED_LED_PIN = 15;
-const uint8_t BLUE_LED_PIN = 2;
+const uint8_t BLUE_LED_PIN = 5;
 const uint8_t GREEN_LED_PIN = 0;
-// const uint8_t SOFT_RX_PIN = 5;
-// const uint8_t SOFT_TX_PIN = 4;
 
 enum LedColour : byte
 {
@@ -267,7 +265,7 @@ void ToggleMode()
 void ICACHE_RAM_ATTR IntCallback()
 {
   long int m =  millis();
-  Serial.printf("Got interupt. Millis %ld\n",m);
+  Serial1.printf("Got interupt. Millis %ld\n",m);
   if (digitalRead(MANUAL_PIN))
   {
     if (millis() - lastPressed > 400)
@@ -285,10 +283,10 @@ bool Connect2Mqtt()
   // IP address could have been change - update mqtt client
 
   int numCerts = certStore.initCertStore(LittleFS, PSTR("/certs.idx"), PSTR("/certs.ar"));
-  Serial.printf("Number of CA certs read: %d\n", numCerts);
+  Serial1.printf("Number of CA certs read: %d\n", numCerts);
   if (numCerts == 0)
   {
-    Serial.printf("No certs found. Did you run certs-from-mozilla.py and upload the LittleFS directory before running?\n");
+    Serial1.printf("No certs found. Did you run certs-from-mozilla.py and upload the LittleFS directory before running?\n");
     return false; // Can't connect to anything w/o certs!
   }
 
@@ -301,21 +299,21 @@ bool Connect2Mqtt()
   mqtt->setServer(mqttServer, mqttPort);
   while (!mqtt->connected())
   {
-    Serial.println("Connecting to MQTT Server...");
+    Serial1.println("Connecting to MQTT Server...");
     String clientId(family);
     clientId += String(" - ");
     clientId += String(random(0xff), HEX);
 
     if (mqtt->connect(clientId.c_str(), mqttUser, mqttPassword))
     {
-      Serial.println("Connected");
+      Serial1.println("Connected");
       mqtt->publish(outTopic.c_str(), "I am alive");
       return true;
     }
     else
     {
-      Serial.print("Failed with state ");
-      Serial.println(mqtt->state());
+      Serial1.print("Failed with state ");
+      Serial1.println(mqtt->state());
       ReportError(-1 * mqtt->state());
       return false;
     }
@@ -328,12 +326,12 @@ void SetupWiFiClient()
   while (WiFi.status() != WL_CONNECTED)
   {
     ReportWiFi(wifiConnecting);
-    Serial.print("*");
+    Serial1.print("*");
   }
 
-  Serial.println("WiFi connection Successful");
-  Serial.print("The IP Address of ESP8266 Module is: ");
-  Serial.println(WiFi.localIP()); // Print the IP address
+  Serial1.println("WiFi connection Successful");
+  Serial1.print("The IP Address of ESP8266 Module is: ");
+  Serial1.println(WiFi.localIP()); // Print the IP address
   ReportWiFi(wifiConnected);
 }
 
@@ -351,19 +349,19 @@ void SetDateTime()
   // Only the date is needed for validating the certificates.
   configTime(TZ_Australia_Melbourne, "pool.ntp.org", "time.nist.gov");
 
-  Serial.print("Waiting for NTP time sync: ");
+  Serial1.print("Waiting for NTP time sync: ");
   time_t now = time(nullptr);
   while (now < 8 * 3600 * 2)
   {
     delay(100);
-    Serial.print(".");
+    Serial1.print(".");
     now = time(nullptr);
   }
-  Serial.println();
+  Serial1.println();
 
   struct tm timeinfo;
   gmtime_r(&now, &timeinfo);
-  Serial.printf("%s %s", tzname[0], asctime(&timeinfo));
+  Serial1.printf("%s %s", tzname[0], asctime(&timeinfo));
 }
 
 void SetupModbus()
@@ -376,42 +374,42 @@ void HandleModbusError(uint8_t errorCode)
   switch (errorCode)
   {
   case node.ku8MBIllegalDataAddress:
-    Serial.println("Illegal data address");
+    Serial1.println("Illegal data address");
     ReportError(modbusIllegalDataAddressError);
     break;
   case node.ku8MBIllegalDataValue:
-    Serial.println("Illegal data value");
+    Serial1.println("Illegal data value");
     ReportError(modbusIllegalDataValueError);
     break;
   case node.ku8MBIllegalFunction:
-    Serial.println("Illegal function");
+    Serial1.println("Illegal function");
     ReportError(modbusIllegalFunctionError);
     break;
   case node.ku8MBSlaveDeviceFailure:
-    Serial.println("Slave device failure");
+    Serial1.println("Slave device failure");
     ReportError(modbusSlaveDeviceFailure);
     break;
   case node.ku8MBSuccess:
-    Serial.println("Success");
+    Serial1.println("Success");
     break;
   case node.ku8MBInvalidSlaveID:
-    Serial.println("Invalid slave ID: The slave ID in the response does not match that of the request.");
+    Serial1.println("Invalid slave ID: The slave ID in the response does not match that of the request.");
     ReportError(modbusnvalidSlaveIDError);
     break;
   case node.ku8MBInvalidFunction:
-    Serial.println("Invalid function: The function code in the response does not match that of the request.");
+    Serial1.println("Invalid function: The function code in the response does not match that of the request.");
     ReportError(modbusInvalidFunction);
     break;
   case node.ku8MBResponseTimedOut:
-    Serial.println("Response timed out");
+    Serial1.println("Response timed out");
     ReportError(modbusResponseTimedOutError);
     break;
   case node.ku8MBInvalidCRC:
-    Serial.println("InvalidCRC");
+    Serial1.println("InvalidCRC");
     ReportError(modbusInvalidCRCError);
     break;
   default:
-    Serial.println("Unknown error");
+    Serial1.println("Unknown error");
     ReportError(modbusUnknownError);
     break;
   }
@@ -586,50 +584,51 @@ void GetRenogyData()
 
   renogy_read_info_registers();
 
-  Serial.println("Info Registers");
-  Serial.println("Voltage rating: " + String(renogy_info.voltage_rating));
-  Serial.println("Amp rating: " + String(renogy_info.amp_rating));
-  Serial.println("Voltage rating: " + String(renogy_info.discharge_amp_rating));
-  Serial.println("Product type: " + String(renogy_info.productType));
-  Serial.println(strcat("Controller name: ", renogy_info.controller_name));
-  Serial.println(strcat("Software version: ",  renogy_info.software_version));
-  Serial.println(strcat("Hardware version: ", renogy_info.hardware_version));
-  Serial.println(strcat("Serial number: ", renogy_info.serial_number));
-  Serial.println("Modbus address: " + String(renogy_info.modbus_address));
-  Serial.println("Wattage rating: " + String(renogy_info.wattage_rating));
+  Serial1.println("Info Registers");
+  Serial1.println("Voltage rating: " + String(renogy_info.voltage_rating));
+  Serial1.println("Amp rating: " + String(renogy_info.amp_rating));
+  Serial1.println("Voltage rating: " + String(renogy_info.discharge_amp_rating));
+  Serial1.println("Product type: " + String(renogy_info.productType));
+  Serial1.println(strcat("Controller name: ", renogy_info.controller_name));
+  Serial1.println(strcat("Software version: ",  renogy_info.software_version));
+  Serial1.println(strcat("Hardware version: ", renogy_info.hardware_version));
+  Serial1.println(strcat("Serial number: ", renogy_info.serial_number));
+  Serial1.println("Modbus address: " + String(renogy_info.modbus_address));
+  Serial1.println("Wattage rating: " + String(renogy_info.wattage_rating));
 
   renogy_read_data_registers();
 
-  Serial.println("Battery voltage: " + String(renogy_data.battery_voltage));
-  Serial.println("Battery charge amps: " + String(renogy_data.battery_charging_amps));
-  Serial.println("Battery charge level: " + String(renogy_data.battery_soc) + "%");
-  Serial.println("Battery temp: " + String(renogy_data.battery_temperature));
-  Serial.println("Controller temp: " + String(renogy_data.controller_temperature));
-  Serial.println("Panel voltage: " + String(renogy_data.solar_panel_voltage));
-  Serial.println("Panel amps: " + String(renogy_data.solar_panel_amps));
-  Serial.println("Panel wattage: " + String(renogy_data.solar_panel_watts));
-  Serial.println("Min Battery voltage today: " + String(renogy_data.min_battery_voltage_today));
-  Serial.println("Max charging amps today: " + String(renogy_data.max_charging_amps_today));
-  Serial.println("Max discharging amps today: " + String(renogy_data.max_discharging_amps_today));
-  Serial.println("Max charging watts today: " + String(renogy_data.max_charge_watts_today));
-  Serial.println("Max discharging watts today: " + String(renogy_data.max_discharge_watts_today));
-  Serial.println("Charging amphours today: " + String(renogy_data.charge_amphours_today));
-  Serial.println("Discharging amphours today: " + String(renogy_data.discharge_amphours_today));
-  Serial.println("Charging watthours today: " + String(renogy_data.charge_watthours_today));
-  Serial.println("Discharging watthours today: " + String(renogy_data.discharge_watthours_today));
-  Serial.println("Controller uptime: " + String(renogy_data.controller_uptime_days) + " days");
-  Serial.println("Total Battery fullcharges: " + String(renogy_data.total_battery_fullcharges));
-  Serial.println("Load State: " + String(renogy_data.loadState));
-  Serial.println("Charging State: " + String(renogy_data.chargingState));
-  Serial.println("Controller Faults High Word: " + String(renogy_data.controllerFaultsHi));
-  Serial.println("Controller Faults Low Word: " + String(renogy_data.controllerFaultsLo));
+  Serial1.println("Battery voltage: " + String(renogy_data.battery_voltage));
+  Serial1.println("Battery charge amps: " + String(renogy_data.battery_charging_amps));
+  Serial1.println("Battery charge level: " + String(renogy_data.battery_soc) + "%");
+  Serial1.println("Battery temp: " + String(renogy_data.battery_temperature));
+  Serial1.println("Controller temp: " + String(renogy_data.controller_temperature));
+  Serial1.println("Panel voltage: " + String(renogy_data.solar_panel_voltage));
+  Serial1.println("Panel amps: " + String(renogy_data.solar_panel_amps));
+  Serial1.println("Panel wattage: " + String(renogy_data.solar_panel_watts));
+  Serial1.println("Min Battery voltage today: " + String(renogy_data.min_battery_voltage_today));
+  Serial1.println("Max charging amps today: " + String(renogy_data.max_charging_amps_today));
+  Serial1.println("Max discharging amps today: " + String(renogy_data.max_discharging_amps_today));
+  Serial1.println("Max charging watts today: " + String(renogy_data.max_charge_watts_today));
+  Serial1.println("Max discharging watts today: " + String(renogy_data.max_discharge_watts_today));
+  Serial1.println("Charging amphours today: " + String(renogy_data.charge_amphours_today));
+  Serial1.println("Discharging amphours today: " + String(renogy_data.discharge_amphours_today));
+  Serial1.println("Charging watthours today: " + String(renogy_data.charge_watthours_today));
+  Serial1.println("Discharging watthours today: " + String(renogy_data.discharge_watthours_today));
+  Serial1.println("Controller uptime: " + String(renogy_data.controller_uptime_days) + " days");
+  Serial1.println("Total Battery fullcharges: " + String(renogy_data.total_battery_fullcharges));
+  Serial1.println("Load State: " + String(renogy_data.loadState));
+  Serial1.println("Charging State: " + String(renogy_data.chargingState));
+  Serial1.println("Controller Faults High Word: " + String(renogy_data.controllerFaultsHi));
+  Serial1.println("Controller Faults Low Word: " + String(renogy_data.controllerFaultsLo));
 
-  Serial.println("-----------------------------------------------------");
+  Serial1.println("-----------------------------------------------------");
 }
 
 void setup()
 {
   Serial.begin(9600);
+  Serial1.begin(9600);
   pinMode(TOGGLE_PIN, INPUT_PULLUP);
   pinMode(MANUAL_PIN, INPUT_PULLDOWN_16);
   pinMode(MODE_PIN, OUTPUT);
@@ -667,14 +666,14 @@ void loop()
   {
     mqtt->publish(outTopic.c_str(), renogy_data.toJSON().c_str());
     lastTimeTelemetrySent = millis();
-    Serial.println("Telemetry sent");
+    Serial1.println("Telemetry sent");
     ReportStatus(mqttSentOK);
   }
   if ((millis() - lastTimeRenogyPolled) > modbusPollingPeriodicity)
   {
     lastTimeRenogyPolled = millis();
     GetRenogyData();
-    Serial.println("Polling Renogy");
+    Serial1.println("Polling Renogy");
     ReportStatus(modbusReadOK);
     if (!digitalRead(MANUAL_PIN))
     {
