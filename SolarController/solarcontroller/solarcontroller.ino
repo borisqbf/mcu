@@ -109,7 +109,8 @@ Controller_data renogy_data;
 
 const uint8_t modbus_address = 255;
 const int modbusBaudRate = 9600;
-const int modbusPollingPeriodicity = 30 * 1000; // in milliseconds;
+
+const int modbusPollingPeriodicity = 2 * 60 * 1000; // report state every xx minutes
 unsigned long lastTimeRenogyPolled = 0;
 
 ModbusMaster node;
@@ -132,13 +133,11 @@ WiFiClientSecure client;
 
 #pragma region MQTT
 
-unsigned long lastTimeTelemetrySent = 0;
 const char *mqttServer = "299d6fc93f0945089400ce1c143e1ebb.s2.eu.hivemq.cloud";
 const int mqttPort = 8883;
 
-const int mqttSendingPeriodicity = 3 * 60 * 1000; // in milliseconds
-
-const int reportingInterval = 5 * 60; // report state every xx seconds
+const int mqttSendingPeriodicity = 10 * 60 * 1000; // in minutes
+unsigned long lastTimeTelemetrySent = 0;
 
 // MQTT Settings
 const char *mqttUser = "boris_qbf";
@@ -642,9 +641,6 @@ void setup()
   InitLEDs();
   attachInterrupt(digitalPinToInterrupt(TOGGLE_PIN), IntCallback, RISING);
 
-  // pinMode(SOFT_RX_PIN, INPUT);
-  // pinMode(SOFT_TX_PIN, OUTPUT);
-
   SetupModbus();
 
   SetupWiFiClient();
@@ -664,10 +660,17 @@ void loop()
 
   if ((millis() - lastTimeTelemetrySent) > mqttSendingPeriodicity)
   {
-    mqtt->publish(outTopic.c_str(), renogy_data.toJSON().c_str());
     lastTimeTelemetrySent = millis();
-    Serial1.println("Telemetry sent");
-    ReportStatus(mqttSentOK);
+    if (mqtt->publish(outTopic.c_str(), renogy_data.toJSON().c_str()))
+    {
+      Serial1.println("Telemetry sent");
+      ReportStatus(mqttSentOK);
+    }
+    else
+    {
+      Serial1.println("Error sending Telemetry " + mqtt->state());
+      ReportError(-1 * mqtt->state());
+    }
   }
   if ((millis() - lastTimeRenogyPolled) > modbusPollingPeriodicity)
   {
