@@ -80,7 +80,7 @@ struct Controller_data
   long last_update_time;         // millis() of last update time
   String toJSON()
   {
-    char buffer[100];
+    char buffer[500];
     sprintf(buffer, "{\n\"BatteryVoltage\":\"%f\",\n\"BatteryChargingCurrent\":\"%f\",\n\"PanelVoltage\":\"%f\",\n\"PanelCurrent\":\"%f\",\n }\n", 
           battery_voltage, battery_charging_amps, solar_panel_voltage, solar_panel_amps);
     return (String(buffer));
@@ -136,7 +136,7 @@ WiFiClientSecure client;
 const char *mqttServer = "299d6fc93f0945089400ce1c143e1ebb.s2.eu.hivemq.cloud";
 const int mqttPort = 8883;
 
-const int mqttSendingPeriodicity = 10 * 60 * 1000; // in minutes
+const int mqttSendingPeriodicity = 3 * 60 * 1000; // in minutes
 unsigned long lastTimeTelemetrySent = 0;
 
 // MQTT Settings
@@ -144,6 +144,18 @@ const char *mqttUser = "boris_qbf";
 const char *mqttPassword = "mqttReward00";
 const char *family = "solar";
 String outTopic(family);
+
+const uint8_t mqttUnknownError = 20;
+const uint8_t mqttConnectionTimeout = 21;
+const uint8_t mqttConnectionLost = 22;
+const uint8_t mqttConnectFailed = 23;
+const uint8_t mqttDisconnected = 24;
+const uint8_t mqttConnected = 25;
+const uint8_t mqttConnectBadProtocol = 26;
+const uint8_t mqttConnectBadClientId = 27;
+const uint8_t mqttConnectUnavailable = 28;
+const uint8_t mqttConnectBadCredentials = 29;
+const uint8_t mqttConnectUnauthorized = 30;
 
 PubSubClient *mqtt;
 
@@ -154,7 +166,7 @@ PubSubClient *mqtt;
 const uint8_t wifiConnecting = 3;
 const uint8_t wifiConnected = 0;
 const uint8_t wifiError = 1;
-const uint8_t mqttError = 3;
+
 const uint8_t modbusUnknownError = 10;
 const uint8_t modbusIllegalDataAddressError = 10;
 const uint8_t modbusIllegalDataValueError = 11;
@@ -263,7 +275,7 @@ void ToggleMode()
 
 void ICACHE_RAM_ATTR IntCallback()
 {
-  long int m =  millis();
+  long int m = millis();
   Serial1.printf("Got interupt. Millis %ld\n",m);
   if (digitalRead(MANUAL_PIN))
   {
@@ -272,6 +284,56 @@ void ICACHE_RAM_ATTR IntCallback()
       ToggleMode();
     }
     lastPressed = millis();
+  }
+}
+
+void HandleMQTTError(int errorCode)
+{
+  switch (errorCode)
+  {
+  case MQTT_CONNECTION_TIMEOUT:
+    Serial1.println("MQTT Connection timeout");
+    ReportError(mqttConnectionTimeout);
+    break;
+  case MQTT_CONNECTION_LOST:
+    Serial1.println("MQTT Connection lost");
+    ReportError(mqttConnectionLost);
+    break;
+  case MQTT_CONNECT_FAILED:
+    Serial1.println("MQTT Connect failed");
+    ReportError(mqttConnectFailed);
+    break;
+  case MQTT_DISCONNECTED:
+    Serial1.println("MQTT Disconnected");
+    ReportError(mqttDisconnected);
+    break;
+  case MQTT_CONNECTED:
+    Serial1.println("MQTT Connected");
+    break;
+  case MQTT_CONNECT_BAD_PROTOCOL:
+    Serial1.println("MQTT Connect bad protocol. The server doesn't support the requested version of MQTT");
+    ReportError(mqttConnectBadProtocol);
+    break;
+  case MQTT_CONNECT_BAD_CLIENT_ID:
+    Serial1.println("MQTT Connect bad client ID. The server rejected the client identifier");
+    ReportError(mqttConnectBadClientId);
+    break;
+  case MQTT_CONNECT_UNAVAILABLE:
+    Serial1.println("MQTT Connect unavailable. The server was unable to accept the connection");
+    ReportError(mqttConnectUnavailable);
+    break;
+  case MQTT_CONNECT_BAD_CREDENTIALS:
+    Serial1.println("MQTT Connect bad credentials. The username/password were rejected");
+    ReportError(mqttConnectBadCredentials);
+    break;
+  case MQTT_CONNECT_UNAUTHORIZED:
+    Serial1.println("MQTT Connect unauthorized. The client was not authorized to connect");
+    ReportError(mqttConnectUnauthorized);
+    break;
+  default:
+    Serial1.println("Unknown error");
+    ReportError(mqttUnknownError);
+    break;
   }
 }
 
@@ -296,6 +358,7 @@ bool Connect2Mqtt()
   mqtt = new PubSubClient(*bear);
 
   mqtt->setServer(mqttServer, mqttPort);
+  mqtt->setKeepAlive(2 * mqttSendingPeriodicity / 1000);
   while (!mqtt->connected())
   {
     Serial1.println("Connecting to MQTT Server...");
@@ -311,9 +374,7 @@ bool Connect2Mqtt()
     }
     else
     {
-      Serial1.print("Failed with state ");
-      Serial1.println(mqtt->state());
-      ReportError(-1 * mqtt->state());
+      HandleMQTTError(mqtt->state());
       return false;
     }
   }
@@ -573,6 +634,7 @@ void renogy_read_info_registers()
 
 void GetRenogyData()
 {
+  Serial1.println("Polling Renogy");
   static uint32_t i;
   i++;
 
@@ -658,6 +720,24 @@ void loop()
     SetupWiFiClient();
   }
 
+  if ((millis() - lastTimeRenogyPolled) > modbusPollingPeriodicity)
+  {
+    lastTimeRenogyPolled = millis();
+    GetRenogyData();
+    ReportStatus(modbusReadOK);
+    if (!digitalRead(MANUAL_PIN))
+    {
+      if (renogy_data.battery_voltage < OnMainThreshold)
+      {
+        ToMainMode();
+      }
+      else if (renogy_data.battery_voltage > OnSolarThreshold)
+      {
+        ToSolarMode();
+      }
+    }
+  }
+
   if ((millis() - lastTimeTelemetrySent) > mqttSendingPeriodicity)
   {
     lastTimeTelemetrySent = millis();
@@ -668,26 +748,8 @@ void loop()
     }
     else
     {
-      Serial1.println("Error sending Telemetry " + mqtt->state());
-      ReportError(-1 * mqtt->state());
-    }
-  }
-  if ((millis() - lastTimeRenogyPolled) > modbusPollingPeriodicity)
-  {
-    lastTimeRenogyPolled = millis();
-    GetRenogyData();
-    Serial1.println("Polling Renogy");
-    ReportStatus(modbusReadOK);
-    if (!digitalRead(MANUAL_PIN))
-    {
-      if (renogy_data.battery_voltage < OnMainThreshold)
-      {
-        ToMainMode();
-      }
-      else if (renogy_data.battery_voltage  > OnSolarThreshold)
-      {
-        ToSolarMode();
-      }
+      Serial1.println("Error sending Telemetry");
+      HandleMQTTError(mqtt->state());
     }
   }
 }
