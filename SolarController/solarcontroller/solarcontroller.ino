@@ -25,8 +25,8 @@ enum LedColour : byte
 };
 enum PowerMode : byte
 {
-    OnSolar = 0,
-    OnMain = 1
+  OnSolar = 0,
+  OnMain = 1
 };
 
 PowerMode mode = OnSolar;
@@ -35,79 +35,74 @@ float OnSolarThreshold = 12.0;
 unsigned long lastPressed = 0;
 #pragma endregion
 
-#pragma region ModBus-Renogy
+#pragma region ModBus -Renogy
 
-const uint32_t num_data_registers = 35;
-const uint32_t num_info_registers = 17;
+const uint32_t numDataRegisters = 35;
+const uint32_t numInfoRegisters = 17;
 
 // A struct to hold the controller data
-struct Controller_data
+struct ControllerData
 {
-  uint8_t battery_soc;               // percent
-  float battery_voltage;             // volts
-  float battery_charging_amps;       // amps
-  uint8_t battery_temperature;       // celcius
-  uint8_t controller_temperature;    // celcius
-  float load_voltage;                // volts
-  float load_amps;                   // amps
-  uint8_t load_watts;                // watts
-  float solar_panel_voltage;         // volts
-  float solar_panel_amps;            // amps
-  uint8_t solar_panel_watts;         // watts
-  float min_battery_voltage_today;   // volts
-  float max_battery_voltage_today;   // volts
-  float max_charging_amps_today;     // amps
-  float max_discharging_amps_today;  // amps
-  uint8_t max_charge_watts_today;    // watts
-  uint8_t max_discharge_watts_today; // watts
-  uint8_t charge_amphours_today;     // amp hours
-  uint8_t discharge_amphours_today;  // amp hours
-  uint8_t charge_watthours_today;    // watt hours
-  uint8_t discharge_watthours_today; // watt hours
-  uint8_t controller_uptime_days;    // days
-  uint8_t total_battery_overcharges; // count
-  uint8_t total_battery_fullcharges; // count
-  uint32_t total_charging_amphours;  // amp hours
-  uint32_t total_discharging_amphours;  // amp hours
-  uint32_t total_power_generated;       // kW hours
-  uint32_t total_power_consumed;        // kW hours
-  float battery_charging_watts;         // watts
-  uint8_t loadState;                    // on-off, brightness
+  uint8_t batteryCapacitySoc;            // percent
+  float batteryVoltage;                  // volts
+  float batteryChargingCurrent;          // amps
+  uint8_t batteryTemperature;            // celcius
+  uint8_t controllerTemperature;         // celcius
+  float loadVoltage;                     // volts
+  float loadCurrent;                     // amps
+  uint8_t loadPower;                     // watts
+  float panelVoltage;                    // volts
+  float panelCurrent;                    // amps
+  uint8_t panelPower;                    // watts
+  float minBatteryVoltageToday;          // volts
+  float maxBatteryVoltageToday;          // volts
+  float maxChargingCurrentToday;         // amps
+  float maxDischargingCurrentToday;      // amps
+  uint8_t maxChargePowerToday;           // watts
+  uint8_t maxDischargePowerToday;        // watts
+  uint8_t chargeAmphoursToday;           // amp hours
+  uint8_t dischargeAmphoursToday;        // amp hours
+  uint8_t powerGenerationToday;          // watt hours
+  uint8_t powerConsumptionToday;         // watt hours
+  uint8_t totalNumOperatingDays;         // days
+  uint8_t totalNumBatteryOverDischarges; // count
+  uint8_t totalNumBatteryFullCharges;    // count
+  uint32_t totalChargingAmphours;        // amp hours
+  uint32_t totalDischargingAmphours;     // amp hours
+  uint32_t cumulativePowerGeneration;    // kW hours
+  uint32_t cumulativePowerConsumption;   // kW hours
+  uint8_t loadState;                     // on-off, street light brightness
   uint8_t chargingState;
   uint16_t controllerFaultsHi;
-  uint16_t controllerFaultsLo; //Reserved
+  uint16_t controllerFaultsLo; // Reserved
 
-  long last_update_time;         // millis() of last update time
   String toJSON()
   {
     char buffer[500];
-    sprintf(buffer, "{\n\"BatteryVoltage\":\"%f\",\n\"BatteryChargingCurrent\":\"%f\",\n\"PanelVoltage\":\"%f\",\n\"PanelCurrent\":\"%f\",\n }\n", 
-          battery_voltage, battery_charging_amps, solar_panel_voltage, solar_panel_amps);
+    sprintf(buffer, "{\n\"BatteryVoltage\":\"%f\",\n\"BatteryChargingCurrent\":\"%f\",\n\"PanelVoltage\":\"%f\",\n\"PanelCurrent\":\"%f\"\n }\n",
+            batteryVoltage, batteryChargingCurrent, panelVoltage, panelCurrent);
     return (String(buffer));
   }
 };
 
 // A struct to hold the controller info params
-struct Controller_info
+struct ControllerInfo
 {
-  uint8_t voltage_rating;       // volts
-  uint8_t amp_rating;           // amps
-  uint8_t discharge_amp_rating; // amps
+  uint8_t maxSupportedVltage;       // volts
+  uint8_t chargingCurrentRating;    // amps
+  uint8_t dischargingCurrentRating; // amps
   uint8_t productType;
-  char controller_name[40];
-  char software_version[40];
-  char hardware_version[40];
-  char serial_number[40];
-  uint8_t modbus_address;
-
-  float wattage_rating;
-  long last_update_time; // millis() of last update time
+  char productModel[17];
+  char softwareVersion[5];
+  char hardwareVersion[5];
+  char serialNumber[5];
+  uint8_t modbusAddress;
 };
 
-Controller_info renogy_info;
-Controller_data renogy_data;
+ControllerInfo renogyInfo;
+ControllerData renogyData;
 
-const uint8_t modbus_address = 255;
+const uint8_t modbusAddress = 255;
 const int modbusBaudRate = 9600;
 
 const int modbusPollingPeriodicity = 2 * 60 * 1000; // report state every xx minutes
@@ -177,10 +172,8 @@ const uint8_t modbusInvalidFunction = 15;
 const uint8_t modbusResponseTimedOutError = 16;
 const uint8_t modbusInvalidCRCError = 17;
 
-
 const uint8_t modbusReadOK = 1;
 const uint8_t mqttSentOK = 3;
-
 
 #pragma endregion
 
@@ -262,7 +255,7 @@ void ToMainMode()
 }
 
 void ToggleMode()
-{ 
+{
   if (mode == OnSolar)
   {
     ToMainMode();
@@ -276,7 +269,7 @@ void ToggleMode()
 void ICACHE_RAM_ATTR IntCallback()
 {
   long int m = millis();
-  Serial1.printf("Got interupt. Millis %ld\n",m);
+  Serial1.printf("Got interupt. Millis %ld\n", m);
   if (digitalRead(MANUAL_PIN))
   {
     if (millis() - lastPressed > 400)
@@ -369,7 +362,7 @@ bool Connect2Mqtt()
     if (mqtt->connect(clientId.c_str(), mqttUser, mqttPassword))
     {
       Serial1.println("Connected");
-      mqtt->publish(outTopic.c_str(), "I am alive");
+      mqtt->publish(outTopic.c_str(), "Renogy monitor connected");
       return true;
     }
     else
@@ -426,7 +419,7 @@ void SetDateTime()
 
 void SetupModbus()
 {
-  node.begin(modbus_address, Serial);
+  node.begin(modbusAddress, Serial);
 }
 
 void HandleModbusError(uint8_t errorCode)
@@ -475,160 +468,154 @@ void HandleModbusError(uint8_t errorCode)
   }
 }
 
-void renogy_read_data_registers()
+void RenogyReadDataRegisters()
 {
-  uint8_t j, result;
-  uint16_t data_registers[num_data_registers];
+  uint8_t result;
+  uint16_t dataRegisters[numDataRegisters];
   char buffer1[40], buffer2[40];
-  uint8_t raw_data;
+  uint8_t rawData;
 
-  result = node.readHoldingRegisters(0x100, num_data_registers);
+  result = node.readHoldingRegisters(0x100, numDataRegisters);
   if (result != node.ku8MBSuccess)
   {
     HandleModbusError(result);
-    renogy_data.battery_soc = 0;
-    renogy_data.battery_voltage = 0; 
-    renogy_data.battery_charging_amps = 0;
-    renogy_data.battery_charging_watts = 0;
-    renogy_data.controller_temperature = 0;
-    renogy_data.battery_temperature = 0;
-    renogy_data.load_voltage = 0;
-    renogy_data.load_amps = 0;
-    renogy_data.load_watts = 0;
-    renogy_data.solar_panel_voltage = 0;
-    renogy_data.solar_panel_amps = 0;
-    renogy_data.solar_panel_watts = 0; 
-    renogy_data.min_battery_voltage_today = 0;
-    renogy_data.max_battery_voltage_today = 0;
-    renogy_data.max_charging_amps_today = 0;
-    renogy_data.max_discharging_amps_today = 0;
-    renogy_data.max_charge_watts_today = 0;
-    renogy_data.max_discharge_watts_today = 0;
-    renogy_data.charge_amphours_today = 0;
-    renogy_data.discharge_amphours_today = 0;
-    renogy_data.charge_watthours_today = 0;
-    renogy_data.discharge_watthours_today = 0;
-    renogy_data.controller_uptime_days = 0;
-    renogy_data.total_battery_overcharges = 0;
-    renogy_data.total_battery_fullcharges = 0;
-    renogy_data.loadState = 0;
-    renogy_data.chargingState = 0;
-    renogy_data.controllerFaultsHi = 0;
-    renogy_data.controllerFaultsLo = 0;
-    renogy_data.total_charging_amphours = 0;
-    renogy_data.total_discharging_amphours = 0;
-    renogy_data.total_power_generated = 0;
-    renogy_data.total_power_consumed = 0;
+    renogyData.batteryCapacitySoc = 0;
+    renogyData.batteryVoltage = 0;
+    renogyData.batteryChargingCurrent = 0;
+    renogyData.controllerTemperature = 0;
+    renogyData.batteryTemperature = 0;
+    renogyData.loadVoltage = 0;
+    renogyData.loadCurrent = 0;
+    renogyData.loadPower = 0;
+    renogyData.panelVoltage = 0;
+    renogyData.panelCurrent = 0;
+    renogyData.panelPower = 0;
+    renogyData.minBatteryVoltageToday = 0;
+    renogyData.maxBatteryVoltageToday = 0;
+    renogyData.maxChargingCurrentToday = 0;
+    renogyData.maxDischargingCurrentToday = 0;
+    renogyData.maxChargePowerToday = 0;
+    renogyData.maxDischargePowerToday = 0;
+    renogyData.chargeAmphoursToday = 0;
+    renogyData.dischargeAmphoursToday = 0;
+    renogyData.powerGenerationToday = 0;
+    renogyData.powerConsumptionToday = 0;
+    renogyData.totalNumOperatingDays = 0;
+    renogyData.totalNumBatteryOverDischarges = 0;
+    renogyData.totalNumBatteryFullCharges = 0;
+    renogyData.loadState = 0;
+    renogyData.chargingState = 0;
+    renogyData.controllerFaultsHi = 0;
+    renogyData.controllerFaultsLo = 0;
+    renogyData.totalChargingAmphours = 0;
+    renogyData.totalDischargingAmphours = 0;
+    renogyData.cumulativePowerGeneration = 0;
+    renogyData.cumulativePowerConsumption = 0;
   }
   else
   {
-    for (j = 0; j < num_data_registers; j++)
+    for (uint8_t i = 0; i < numDataRegisters; i++)
     {
-      data_registers[j] = node.getResponseBuffer(j);
+      dataRegisters[i] = node.getResponseBuffer(i);
     }
 
-    renogy_data.battery_soc = data_registers[0];
-    renogy_data.battery_voltage = data_registers[1] * 0.1; 
-    renogy_data.battery_charging_amps = data_registers[2] * 0.01;
-
-    renogy_data.battery_charging_watts = renogy_data.battery_voltage * renogy_data.battery_charging_amps;
+    renogyData.batteryCapacitySoc = dataRegisters[0];
+    renogyData.batteryVoltage = dataRegisters[1] * 0.1;
+    renogyData.batteryChargingCurrent = dataRegisters[2] * 0.01;
 
     // 0x103 returns two bytes, one for battery and one for controller temp in c
-    uint16_t raw_data = data_registers[3]; // eg 5913
-    renogy_data.controller_temperature = raw_data / 256;
-    renogy_data.battery_temperature = raw_data % 256;
+    uint16_t rawData = dataRegisters[3]; // eg 5913
+    renogyData.controllerTemperature = rawData / 256;
+    renogyData.batteryTemperature = rawData % 256;
 
-    renogy_data.load_voltage = data_registers[4] * 0.1;
-    renogy_data.load_amps = data_registers[5] * 0.01;
-    renogy_data.load_watts = data_registers[6];
-    renogy_data.solar_panel_voltage = data_registers[7] * 0.1;
-    renogy_data.solar_panel_amps = data_registers[8] * 0.01;
-    renogy_data.solar_panel_watts = data_registers[9];
+    renogyData.loadVoltage = dataRegisters[4] * 0.1;
+    renogyData.loadCurrent = dataRegisters[5] * 0.01;
+    renogyData.loadPower = dataRegisters[6];
+    renogyData.panelVoltage = dataRegisters[7] * 0.1;
+    renogyData.panelCurrent = dataRegisters[8] * 0.01;
+    renogyData.panelPower = dataRegisters[9];
     // Register 0x10A - Turn on load, write register - 10
-    renogy_data.min_battery_voltage_today = data_registers[11] * 0.1;
-    renogy_data.max_battery_voltage_today = data_registers[12] * 0.1;
-    renogy_data.max_charging_amps_today = data_registers[13] * 0.01;
-    renogy_data.max_discharging_amps_today = data_registers[14] * 0.01;
-    renogy_data.max_charge_watts_today = data_registers[15];
-    renogy_data.max_discharge_watts_today = data_registers[16];
-    renogy_data.charge_amphours_today = data_registers[17];
-    renogy_data.discharge_amphours_today = data_registers[18];
-    renogy_data.charge_watthours_today = data_registers[19];
-    renogy_data.discharge_watthours_today = data_registers[20];
-    renogy_data.controller_uptime_days = data_registers[21];
-    renogy_data.total_battery_overcharges = data_registers[22];
-    renogy_data.total_battery_fullcharges = data_registers[23];
+    renogyData.minBatteryVoltageToday = dataRegisters[11] * 0.1;
+    renogyData.maxBatteryVoltageToday = dataRegisters[12] * 0.1;
+    renogyData.maxChargingCurrentToday = dataRegisters[13] * 0.01;
+    renogyData.maxDischargingCurrentToday = dataRegisters[14] * 0.01;
+    renogyData.maxChargePowerToday = dataRegisters[15];
+    renogyData.maxDischargePowerToday = dataRegisters[16];
+    renogyData.chargeAmphoursToday = dataRegisters[17];
+    renogyData.dischargeAmphoursToday = dataRegisters[18];
+    renogyData.powerGenerationToday = dataRegisters[19];
+    renogyData.powerConsumptionToday = dataRegisters[20];
+    renogyData.totalNumOperatingDays = dataRegisters[21];
+    renogyData.totalNumBatteryOverDischarges = dataRegisters[22];
+    renogyData.totalNumBatteryFullCharges = dataRegisters[23];
 
-    memcpy(&renogy_data.total_charging_amphours, &(data_registers[24]), 4);
-    memcpy(&renogy_data.total_discharging_amphours, &(data_registers[26]), 4);
-    memcpy(&renogy_data.total_power_generated, &(data_registers[28]), 4);
-    memcpy(&renogy_data.total_power_consumed, &(data_registers[30]), 4);
+    memcpy(&renogyData.totalChargingAmphours, &(dataRegisters[24]), 4);
+    memcpy(&renogyData.totalDischargingAmphours, &(dataRegisters[26]), 4);
+    memcpy(&renogyData.cumulativePowerGeneration, &(dataRegisters[28]), 4);
+    memcpy(&renogyData.cumulativePowerConsumption, &(dataRegisters[30]), 4);
 
-    raw_data = data_registers[32];
-    renogy_data.loadState = raw_data / 256;
-    renogy_data.chargingState = raw_data % 256;
-    renogy_data.controllerFaultsHi = data_registers[33];
-    renogy_data.controllerFaultsLo = data_registers[34];
-    renogy_data.last_update_time = millis();
+    rawData = dataRegisters[32];
+    renogyData.loadState = rawData / 256;
+    renogyData.chargingState = rawData % 256;
+    renogyData.controllerFaultsHi = dataRegisters[33];
+    renogyData.controllerFaultsLo = dataRegisters[34];
   }
 }
 
-void renogy_read_info_registers()
+void RenogyReadInfoRegisters()
 {
-  uint8_t j, result;
-  uint16_t info_registers[num_info_registers];
+  uint8_t result;
+  uint16_t infoRegisters[numInfoRegisters];
   char buffer1[40], buffer2[40];
-  uint8_t raw_data;
+  uint8_t rawData;
 
-  result = node.readHoldingRegisters(0x00A, num_info_registers);
+  result = node.readHoldingRegisters(0x00A, numInfoRegisters);
   if (result != node.ku8MBSuccess)
   {
     HandleModbusError(result);
   }
   else
   {
-    for (j = 0; j < num_info_registers; j++)
+    for (uint8_t i = 0; i < numInfoRegisters; i++)
     {
-      info_registers[j] = node.getResponseBuffer(j);
+      infoRegisters[i] = node.getResponseBuffer(i);
     }
 
     // read and process each value
     // Register 0x0A - Controller voltage and Current Rating - 0
-     raw_data = info_registers[0];
-    renogy_info.voltage_rating = raw_data / 256;
-    renogy_info.amp_rating = raw_data % 256;
-    renogy_info.wattage_rating = renogy_info.voltage_rating * renogy_info.amp_rating;
- 
+    rawData = infoRegisters[0];
+    renogyInfo.maxSupportedVltage = rawData / 256;
+    renogyInfo.chargingCurrentRating = rawData % 256;
+
     // Register 0x0B - Controller discharge current and productType - 1
-    raw_data = info_registers[1];
-    renogy_info.discharge_amp_rating = raw_data / 256; 
-    renogy_info.productType = raw_data % 256;
+    rawData = infoRegisters[1];
+    renogyInfo.dischargingCurrentRating = rawData / 256;
+    renogyInfo.productType = rawData % 256;
 
     // Registers 0x0C to 0x13 - Product Model String - 2-9
-    char* modelNo = (char *)&(info_registers[2]);
-    strncpy((char*)&(renogy_info.controller_name), modelNo, 16);
-    renogy_info.controller_name[16] = '\0';
+    char *modelNo = (char *)&(infoRegisters[2]);
+    strncpy((char *)&(renogyInfo.productModel), modelNo, 16);
+    renogyInfo.productModel[16] = '\0';
 
     // Registers 0x014 to 0x015 - Software Version - 10-11
-    itoa(info_registers[10], buffer1, 10);
-    itoa(info_registers[11], buffer2, 10);
+    itoa(infoRegisters[10], buffer1, 10);
+    itoa(infoRegisters[11], buffer2, 10);
     strcat(buffer1, buffer2);
-    strcpy(renogy_info.software_version, buffer1);
-  
+    strcpy(renogyInfo.softwareVersion, buffer1);
+
     // Registers 0x016 to 0x017 - Hardware Version - 12-13
-    itoa(info_registers[12], buffer1, 10);
-    itoa(info_registers[13], buffer2, 10);
+    itoa(infoRegisters[12], buffer1, 10);
+    itoa(infoRegisters[13], buffer2, 10);
     strcat(buffer1, buffer2);
-    strcpy(renogy_info.hardware_version, buffer1);
+    strcpy(renogyInfo.hardwareVersion, buffer1);
 
     // Registers 0x018 to 0x019 - Product Serial Number - 14-15
-    itoa(info_registers[14], buffer1, 10);
-    itoa(info_registers[15], buffer2, 10);
-    strcat(buffer1, buffer2); 
-    strcpy(renogy_info.serial_number, buffer1);
+    itoa(infoRegisters[14], buffer1, 10);
+    itoa(infoRegisters[15], buffer2, 10);
+    strcat(buffer1, buffer2);
+    strcpy(renogyInfo.serialNumber, buffer1);
 
-    renogy_info.modbus_address = info_registers[16] % 256;
-    renogy_info.last_update_time = millis();
+    renogyInfo.modbusAddress = infoRegisters[16] % 256;
   }
 }
 
@@ -643,45 +630,45 @@ void GetRenogyData()
   // set word 1 of TX buffer to most-significant word of counter (bits 31..16)
   node.setTransmitBuffer(1, highWord(i));
 
-  renogy_read_info_registers();
+  RenogyReadInfoRegisters();
 
   Serial1.println("Info Registers");
-  Serial1.println("Voltage rating: " + String(renogy_info.voltage_rating));
-  Serial1.println("Amp rating: " + String(renogy_info.amp_rating));
-  Serial1.println("Voltage rating: " + String(renogy_info.discharge_amp_rating));
-  Serial1.println("Product type: " + String(renogy_info.productType));
-  Serial1.println(strcat("Controller name: ", renogy_info.controller_name));
-  Serial1.println(strcat("Software version: ",  renogy_info.software_version));
-  Serial1.println(strcat("Hardware version: ", renogy_info.hardware_version));
-  Serial1.println(strcat("Serial number: ", renogy_info.serial_number));
-  Serial1.println("Modbus address: " + String(renogy_info.modbus_address));
-  Serial1.println("Wattage rating: " + String(renogy_info.wattage_rating));
+  Serial1.println("Voltage rating: " + String(renogyInfo.maxSupportedVltage));
+  Serial1.println("Amp rating: " + String(renogyInfo.chargingCurrentRating));
+  Serial1.println("Voltage rating: " + String(renogyInfo.dischargingCurrentRating));
+  Serial1.println("Product type: " + String(renogyInfo.productType));
+  Serial1.println(strcat("Controller name: ", renogyInfo.productModel));
+  Serial1.println(strcat("Software version: ", renogyInfo.softwareVersion));
+  Serial1.println(strcat("Hardware version: ", renogyInfo.hardwareVersion));
+  Serial1.println(strcat("Serial number: ", renogyInfo.serialNumber));
+  Serial1.println("Modbus address: " + String(renogyInfo.modbusAddress));
 
-  renogy_read_data_registers();
+  RenogyReadDataRegisters();
 
-  Serial1.println("Battery voltage: " + String(renogy_data.battery_voltage));
-  Serial1.println("Battery charge amps: " + String(renogy_data.battery_charging_amps));
-  Serial1.println("Battery charge level: " + String(renogy_data.battery_soc) + "%");
-  Serial1.println("Battery temp: " + String(renogy_data.battery_temperature));
-  Serial1.println("Controller temp: " + String(renogy_data.controller_temperature));
-  Serial1.println("Panel voltage: " + String(renogy_data.solar_panel_voltage));
-  Serial1.println("Panel amps: " + String(renogy_data.solar_panel_amps));
-  Serial1.println("Panel wattage: " + String(renogy_data.solar_panel_watts));
-  Serial1.println("Min Battery voltage today: " + String(renogy_data.min_battery_voltage_today));
-  Serial1.println("Max charging amps today: " + String(renogy_data.max_charging_amps_today));
-  Serial1.println("Max discharging amps today: " + String(renogy_data.max_discharging_amps_today));
-  Serial1.println("Max charging watts today: " + String(renogy_data.max_charge_watts_today));
-  Serial1.println("Max discharging watts today: " + String(renogy_data.max_discharge_watts_today));
-  Serial1.println("Charging amphours today: " + String(renogy_data.charge_amphours_today));
-  Serial1.println("Discharging amphours today: " + String(renogy_data.discharge_amphours_today));
-  Serial1.println("Charging watthours today: " + String(renogy_data.charge_watthours_today));
-  Serial1.println("Discharging watthours today: " + String(renogy_data.discharge_watthours_today));
-  Serial1.println("Controller uptime: " + String(renogy_data.controller_uptime_days) + " days");
-  Serial1.println("Total Battery fullcharges: " + String(renogy_data.total_battery_fullcharges));
-  Serial1.println("Load State: " + String(renogy_data.loadState));
-  Serial1.println("Charging State: " + String(renogy_data.chargingState));
-  Serial1.println("Controller Faults High Word: " + String(renogy_data.controllerFaultsHi));
-  Serial1.println("Controller Faults Low Word: " + String(renogy_data.controllerFaultsLo));
+  Serial1.println("Battery voltage: " + String(renogyData.batteryVoltage));
+  Serial1.println("Battery charge current: " + String(renogyData.batteryChargingCurrent));
+  Serial1.println("Battery charge level: " + String(renogyData.batteryCapacitySoc) + "%");
+  Serial1.println("Battery temp: " + String(renogyData.batteryTemperature));
+  Serial1.println("Controller temp: " + String(renogyData.controllerTemperature));
+  Serial1.println("Panel voltage: " + String(renogyData.panelVoltage));
+  Serial1.println("Panel current: " + String(renogyData.panelCurrent));
+  Serial1.println("Panel power: " + String(renogyData.panelPower));
+  Serial1.println("Min Battery voltage today: " + String(renogyData.minBatteryVoltageToday));
+  Serial1.println("Max charging current today: " + String(renogyData.maxChargingCurrentToday));
+  Serial1.println("Max discharging current today: " + String(renogyData.maxDischargingCurrentToday));
+  Serial1.println("Max charging power today: " + String(renogyData.maxChargePowerToday));
+  Serial1.println("Max discharging power today: " + String(renogyData.maxDischargePowerToday));
+  Serial1.println("Charging amphours today: " + String(renogyData.chargeAmphoursToday));
+  Serial1.println("Discharging amphours today: " + String(renogyData.dischargeAmphoursToday));
+  Serial1.println("Charging power today: " + String(renogyData.powerGenerationToday));
+  Serial1.println("Discharging power today: " + String(renogyData.powerConsumptionToday));
+  Serial1.println("Controller uptime: " + String(renogyData.totalNumOperatingDays) + " days");
+  Serial1.println("Total Battery fullcharges: " + String(renogyData.totalNumBatteryFullCharges));
+  Serial1.println("Total Battery overDischarges: " + String(renogyData.totalNumBatteryOverDischarges));
+  Serial1.println("Load State: " + String(renogyData.loadState));
+  Serial1.println("Charging State: " + String(renogyData.chargingState));
+  Serial1.println("Controller Faults High Word: " + String(renogyData.controllerFaultsHi));
+  Serial1.println("Controller Faults Low Word: " + String(renogyData.controllerFaultsLo));
 
   Serial1.println("-----------------------------------------------------");
 }
@@ -727,11 +714,11 @@ void loop()
     ReportStatus(modbusReadOK);
     if (!digitalRead(MANUAL_PIN))
     {
-      if (renogy_data.battery_voltage < OnMainThreshold)
+      if (renogyData.batteryVoltage < OnMainThreshold)
       {
         ToMainMode();
       }
-      else if (renogy_data.battery_voltage > OnSolarThreshold)
+      else if (renogyData.batteryVoltage > OnSolarThreshold)
       {
         ToSolarMode();
       }
@@ -741,7 +728,7 @@ void loop()
   if ((millis() - lastTimeTelemetrySent) > mqttSendingPeriodicity)
   {
     lastTimeTelemetrySent = millis();
-    if (mqtt->publish(outTopic.c_str(), renogy_data.toJSON().c_str()))
+    if (mqtt->publish(outTopic.c_str(), renogyData.toJSON().c_str()))
     {
       Serial1.println("Telemetry sent");
       ReportStatus(mqttSentOK);
