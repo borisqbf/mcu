@@ -12,7 +12,7 @@
     LiquidCrystal_I2C lcd(0x27, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE); // -- creating LCD instance
     LcdBarGraphX lbg(&lcd, 16, 0, 1);
 
-    const int pollingPeriodicity = 30 * 1000; // report state every xx minutes
+    const int pollingPeriodicity = 7 * 1000; // report state every xx seconds
     unsigned long lastTimePolled = 0;
 
     const char *ssid = "QBF";          // your network SSID (name)
@@ -21,7 +21,7 @@
     WiFiClient client;
     ESP8266WebServer server(80);
 
-    double waterLevelPercentage = 42.00;
+    double waterLevelPercentage = 0.00;
 
     void SetupWiFiClient()
     {
@@ -84,12 +84,14 @@ void GetLevel()
 
 void setup()
 {
+  Serial.begin(115200);
   pinMode(led, OUTPUT);
   digitalWrite(led, 0);
   SetupWiFiClient();
   lcd.begin(0, 2, 2, lcdNumCols);
   lcd.clear();
   lcd.backlight(); // open the backlight
+  delay(100);
 }
 
 void loop() 
@@ -99,13 +101,19 @@ void loop()
   if ((millis() - lastTimePolled) > pollingPeriodicity)
   {
     lastTimePolled = millis();
-    lcd.clear();
-    lbg.drawValue(waterLevelPercentage, 100);
+    waterLevelPercentage +=1;
+    if (waterLevelPercentage > 98)
+    {
+      waterLevelPercentage = 0;  
+    }
+    int pc = waterLevelPercentage * 100;
+    lbg.drawValue(pc, 10000);
+
     lcd.setCursor(0, 0); 
-    lcd.print("Level:");
-    lcd.setCursor(7, 0);             //
-    lcd.print(waterLevelPercentage); // print
-    lcd.setCursor(12, 0);            //
-    lcd.print("%");
+    String val("Level: ");
+    val += String(waterLevelPercentage, 2);
+    val += "%";
+    lcd.print(val);
+    delay(100);
   }
 }
