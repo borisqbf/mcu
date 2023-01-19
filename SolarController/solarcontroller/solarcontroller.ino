@@ -114,9 +114,12 @@ ModbusMaster node;
 
 #pragma region WiFi
 // WI-FI settings
-char msg[50];
+/*
 const char *ssid = "QBF";          // your network SSID (name)
 const char *pass = "!QbfReward00"; // your network password
+*/
+const char *ssid = "y-Dacha";          // your network SSID (name)
+const char *pass = ".QbfReward00+"; // your network password
 
 // A single, global CertStore which can be used by all connections.
 // Needs to stay live the entire time any of the WiFiClientBearSSLs
