@@ -120,6 +120,10 @@ const char *pass = "!QbfReward00"; // your network password
 */
 const char *ssid = "y-Dacha";          // your network SSID (name)
 const char *pass = ".QbfReward00+"; // your network password
+/*
+const char *ssid = "Boris-iPhone";          // your network SSID (name)
+const char *pass = "reward00"; // your network password
+*/
 
 // A single, global CertStore which can be used by all connections.
 // Needs to stay live the entire time any of the WiFiClientBearSSLs
@@ -427,6 +431,9 @@ void SetupModbus()
 
 void HandleModbusError(uint8_t errorCode)
 {
+  String errC = String("Modbus Error ");
+  errC.concat(errorCode);
+  mqtt->publish(outTopic.c_str(),  errC.c_str());
   switch (errorCode)
   {
   case node.ku8MBIllegalDataAddress:
