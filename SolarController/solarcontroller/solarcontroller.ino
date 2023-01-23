@@ -78,9 +78,12 @@ struct ControllerData
 
   String toJSON()
   {
-    char buffer[500];
-    sprintf(buffer, "{\n\"BatteryVoltage\":\"%f\",\n\"BatteryChargingCurrent\":\"%f\",\n\"PanelVoltage\":\"%f\",\n\"PanelCurrent\":\"%f\"\n }\n",
-            batteryVoltage, batteryChargingCurrent, panelVoltage, panelCurrent);
+    char buffer[5000];
+    sprintf(buffer, "{\n\"BatteryVoltage\":\"%f\",\n\"BatteryChargingCurrent\":\"%f\",\n\"PanelVoltage\":\"%f\",\n\"PanelCurrent\":\"%f\"\n,\n\"BatteryCapacitySoc\":\"%d\"\n,\n\"BatteryTemperature\":\"%d\"\n,\n\"ControllerTemperature\":\"%d\"\n,\n\"PanelPower\":\"%d\"\n,\n\"LoadVoltage\":\"%f\"\n,\n\"LoadPower\":\"%d\"\n,\n\"LoadCurrent\":\"%f\"\n,\n\"MinBatteryVoltageToday\":\"%f\"\n,\n\"MaxBatteryVoltageToday\":\"%f\"\n,\n\"MaxChargingCurrentToday\":\"%f\"\n,\n\"MaxDischargingCurrentToday\":\"%f\"\n,\n\"MaxChargePowerToday\":\"%d\"\n,\n\"MaxDischargePowerToday\":\"%d\"\n,\n\"ChargeAmphoursToday\":\"%d\"\n,\n\"DischargeAmphoursToday\":\"%d\"\n,\n\"PowerGenerationToday\":\"%d\"\n,\n\"PowerConsumptionToday\":\"%d\"\n,\n\"TotalNumOperatingDays\":\"%d\"\n,\n\"TotalNumOperatingDays\":\"%d\"\n,\n\"TotalNumBatteryOverDischarges\":\"%d\"\n,\n\"LoadState\":\"%d\"\n,\n\"ChargingState\":\"%d\"\n,\n\"ControllerFaultsHi\":\"%d\"\n,\n\"ControllerFaultsLo\":\"%d\"\n}\n ",
+            batteryVoltage,
+            batteryChargingCurrent, panelVoltage, panelCurrent, batteryCapacitySoc, batteryTemperature, controllerTemperature,
+            panelPower, loadVoltage, loadCurrent, loadPower, minBatteryVoltageToday, maxBatteryVoltageToday, maxChargingCurrentToday, maxDischargingCurrentToday, chargeAmphoursToday, dischargeAmphoursToday,
+            powerGenerationToday, powerConsumptionToday, totalNumOperatingDays, totalNumOperatingDays, totalNumBatteryOverDischarges, loadState, chargingState, controllerFaultsHi, controllerFaultsLo);
     return (String(buffer));
   }
 };
@@ -118,7 +121,7 @@ ModbusMaster node;
 const char *ssid = "QBF";          // your network SSID (name)
 const char *pass = "!QbfReward00"; // your network password
 */
-const char *ssid = "y-Dacha";          // your network SSID (name)
+const char *ssid = "y-Dacha";       // your network SSID (name)
 const char *pass = ".QbfReward00+"; // your network password
 /*
 const char *ssid = "Boris-iPhone";          // your network SSID (name)
@@ -382,13 +385,18 @@ bool Connect2Mqtt()
 
 void SetupWiFiClient()
 {
+  WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, pass);
+
   while (WiFi.status() != WL_CONNECTED)
   {
     ReportWiFi(wifiConnecting);
     Serial1.print("*");
+    delay(1000);
   }
 
+  WiFi.setAutoReconnect(true);
+  WiFi.persistent(true);
   Serial1.println("WiFi connection Successful");
   Serial1.print("The IP Address of ESP8266 Module is: ");
   Serial1.println(WiFi.localIP()); // Print the IP address
@@ -431,51 +439,51 @@ void SetupModbus()
 
 void HandleModbusError(uint8_t errorCode)
 {
-  String errC = String("Modbus Error ");
-  errC.concat(errorCode);
-  mqtt->publish(outTopic.c_str(),  errC.c_str());
+  String errorStr;
   switch (errorCode)
   {
   case node.ku8MBIllegalDataAddress:
-    Serial1.println("Illegal data address");
+    errorStr = "Illegal data address";
     ReportError(modbusIllegalDataAddressError);
     break;
   case node.ku8MBIllegalDataValue:
-    Serial1.println("Illegal data value");
+    errorStr = "Illegal data value";
     ReportError(modbusIllegalDataValueError);
     break;
   case node.ku8MBIllegalFunction:
-    Serial1.println("Illegal function");
+    errorStr = "Illegal function";
     ReportError(modbusIllegalFunctionError);
     break;
   case node.ku8MBSlaveDeviceFailure:
-    Serial1.println("Slave device failure");
+    errorStr = "Slave device failure";
     ReportError(modbusSlaveDeviceFailure);
     break;
   case node.ku8MBSuccess:
-    Serial1.println("Success");
+    errorStr = "Success";
     break;
   case node.ku8MBInvalidSlaveID:
-    Serial1.println("Invalid slave ID: The slave ID in the response does not match that of the request.");
+    errorStr = "Invalid slave ID: The slave ID in the response does not match that of the request.";
     ReportError(modbusnvalidSlaveIDError);
     break;
   case node.ku8MBInvalidFunction:
-    Serial1.println("Invalid function: The function code in the response does not match that of the request.");
+    errorStr = "Invalid function: The function code in the response does not match that of the request.";
     ReportError(modbusInvalidFunction);
     break;
   case node.ku8MBResponseTimedOut:
-    Serial1.println("Response timed out");
+    errorStr = "Response timed out";
     ReportError(modbusResponseTimedOutError);
     break;
   case node.ku8MBInvalidCRC:
-    Serial1.println("InvalidCRC");
+    errorStr = "InvalidCRC";
     ReportError(modbusInvalidCRCError);
     break;
   default:
-    Serial1.println("Unknown error");
+    errorStr = "Unknown error";
     ReportError(modbusUnknownError);
     break;
   }
+  Serial1.println(errorStr);
+  mqtt->publish(outTopic.c_str(), errorStr.c_str());
 }
 
 void RenogyReadDataRegisters()
@@ -726,10 +734,12 @@ void loop()
     {
       if (renogyData.batteryVoltage < OnMainThreshold)
       {
+        mqtt->publish(outTopic.c_str(), "Switching to mains power");
         ToMainMode();
       }
       else if (renogyData.batteryVoltage > OnSolarThreshold)
       {
+        mqtt->publish(outTopic.c_str(), "Switching to solar");
         ToSolarMode();
       }
     }
