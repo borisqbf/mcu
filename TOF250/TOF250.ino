@@ -1,7 +1,7 @@
 #include <Wire.h>
 
 #define REG_00H 0x00
-#define REG_00L 0x00
+
 
 const int TOF250address = 0x52;
 
