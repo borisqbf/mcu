@@ -2,10 +2,12 @@
 #define RENOGYINFO_H
 
 #include <stdint.h>
-#include <Wstring.h>
+
 // A struct to hold the controller info params
-struct RenogyInfo
+class RenogyInfo
 {
+
+public:
     uint8_t maxSupportedVltage;       // volts
     uint8_t chargingCurrentRating;    // amps
     uint8_t dischargingCurrentRating; // amps
@@ -16,7 +18,10 @@ struct RenogyInfo
     char serialNumber[5];
     uint8_t modbusAddress;
 
-    String toJSON();
+    char *toJSON();
+
+private:
+    char buffer[300];
 };
 
 #endif

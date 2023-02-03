@@ -11,12 +11,14 @@ WiFiController* WiFiController::GetInstance()
 WiFiController::WiFiController()
 {
     // WI-FI settings
-    /*
+   /*
     ssid = "QBF";          // your network SSID (name)
     pass = "!QbfReward00"; // your network password
-    */
+    
+      */
     ssid = "y-Dacha";       // your network SSID (name)
     pass = ".QbfReward00+"; // your network password
+
     /*
     ssid = "Boris-iPhone";          // your network SSID (name)
     pass = "reward00"; // your network password

@@ -37,7 +37,7 @@ public:
     static RenogyController *GetInstance();
     void HandleModbusError(uint8_t errorCode);
     float GetBatteryVoltage() { return renogyData.batteryVoltage; };
-    bool PublishRenogyData() { mqttController->PublishMessage(renogyData.toJSON()); };
+    bool PublishRenogyData();
 
     bool GetRenogyData();
     bool IsUpdateRequired();

@@ -15,6 +15,11 @@ RenogyController::RenogyController()
     mqttController = MqttController::GetInstance();
 };
 
+bool RenogyController::PublishRenogyData()
+{ 
+    return mqttController->PublishMessage(renogyData.toJSON()); 
+}
+
 bool RenogyController::IsUpdateRequired()
 {
     if ((millis() - lastTimeRenogyPolled) > modbusPollingPeriodicity)

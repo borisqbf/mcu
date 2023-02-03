@@ -1,9 +1,10 @@
 #include <stdio.h>
+#include <cstring>
 #include "RenogyData.h"
 
-String RenogyData::toJSON()
+char* RenogyData::toJSON()
 {
-    char buffer[500];
+    memset(buffer, '\0', sizeof(buffer));
     sprintf(buffer, "{\n\"BatteryVoltage\":\"%.2f\",\n"
                     "\"BatteryChargingCurrent\":\"%.2f\",\n"
                     "\"PanelVoltage\":\"%.2f\",\n"
@@ -69,5 +70,5 @@ String RenogyData::toJSON()
             chargingState,
             controllerFaultsHi,
             controllerFaultsLo);
-    return (String(buffer));
+    return buffer;
 }

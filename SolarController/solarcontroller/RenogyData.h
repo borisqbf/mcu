@@ -2,11 +2,12 @@
 #define RENOGYDATA_H
 
 #include <stdint.h>
-#include <Wstring.h>
-// A struct to hold the controller data 
 
-struct RenogyData
+// A struct to hold the controller data
+
+class RenogyData
 {
+public:
     float batteryVoltage;          // volts
     float batteryChargingCurrent;  // amps
     float panelVoltage;            // volts
@@ -40,8 +41,10 @@ struct RenogyData
     uint16_t controllerFaultsHi;
     uint16_t controllerFaultsLo; // Reserved
 
+    char *toJSON();
 
-    String toJSON();
+private:
+    char buffer[500];
 };
 
 #endif

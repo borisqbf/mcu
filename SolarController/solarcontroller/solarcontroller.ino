@@ -1,6 +1,6 @@
 #include "RenogyData.h"
 #include "RenogyInfo.h"
-#include "renogyController.h"
+#include "RenogyController.h"
 #include "MqttController.h"
 #include "LEDStatusReporter.h"
 #include "WiFiController.h"
@@ -118,6 +118,8 @@ void loop()
   }
   if (mqttController->IsUpdateRequired())
   {
+    Serial1.println("Sending telemetry");
+ 
     if (renogyController->PublishRenogyData())
     {
       Serial1.println("Telemetry sent");
