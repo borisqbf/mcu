@@ -34,7 +34,7 @@ bool RenogyController::IsUpdateRequired()
 
 void RenogyController::HandleModbusError(uint8_t errorCode)
 {
-    String errorStr;
+    const char* errorStr;
     switch (errorCode)
     {
     case node.ku8MBIllegalDataAddress:
