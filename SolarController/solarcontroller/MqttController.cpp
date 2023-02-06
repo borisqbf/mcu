@@ -15,7 +15,7 @@ MqttController::MqttController()
     mqttServer = "299d6fc93f0945089400ce1c143e1ebb.s2.eu.hivemq.cloud";
     mqttUser = "boris_qbf";
     mqttPassword = "mqttReward00";
-    family = "solar";
+    family = "solar - 00000000";
     lastTimeTelemetrySent = 0;
     wifiController = WiFiController::GetInstance();
 }
@@ -115,11 +115,10 @@ bool MqttController::Connect()
     while (!mqtt->connected())
     {
         Serial1.println("Connecting to MQTT Server...");
-        String clientId(family);
-        clientId += String(" - ");
-        clientId += String(random(0xff), HEX);
 
-        if (mqtt->connect(clientId.c_str(), mqttUser, mqttPassword))
+        sprintf((char*)(family + 8), "%08x", random(0xff));
+
+        if (mqtt->connect(family, mqttUser, mqttPassword))
         {
             Serial1.println("Connected");
             PublishMessage("Renogy monitor connected");

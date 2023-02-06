@@ -2,7 +2,6 @@
 #define MQTTCONTROLLER_H
 
 #include <stdint.h>
-#include <Wstring.h>
 #include <PubSubClient.h>
 #include <time.h>
 #include <TZ.h>
@@ -33,11 +32,6 @@ class MqttController
 public:
     MqttController();
     bool Connect();
-
-    bool PublishMessage(String msg)
-    {
-        return PublishMessage(msg.c_str());
-    };
 
     bool PublishMessage(const char *msg);
     void Loop() { mqtt->loop(); };
