@@ -83,7 +83,7 @@ bool RenogyController::RenogyReadDataRegisters()
 {
     uint8_t result;
     uint16_t dataRegisters[numDataRegisters];
-    uint8_t rawData;
+    uint16_t rawData;
 
     result = node.readHoldingRegisters(0x100, numDataRegisters);
 
@@ -179,7 +179,7 @@ bool RenogyController::RenogyReadInfoRegisters()
 {
     uint8_t result;
     uint16_t infoRegisters[numInfoRegisters];
-    uint8_t rawData;
+    uint16_t rawData;
 
     result = node.readHoldingRegisters(0x00A, numInfoRegisters);
 
@@ -198,7 +198,6 @@ bool RenogyController::RenogyReadInfoRegisters()
         for (uint8_t i = 0; i < numInfoRegisters; i++)
         {
             infoRegisters[i] = node.getResponseBuffer(i);
-            Serial1.print("Register "); Serial1.print (i); Serial1.print(" value ");  Serial1.println(infoRegisters[i]);
         }
 
         // read and process each value
@@ -218,16 +217,16 @@ bool RenogyController::RenogyReadInfoRegisters()
         renogyInfo.productModel[16] = '\0';
 
         // Registers 0x014 to 0x015 - Software Version - 10-11
-        sprintf(renogyInfo.softwareVersion, "%n%n", infoRegisters[10], infoRegisters[11]);
-        renogyInfo.softwareVersion[4] = '\0';
+        sprintf(renogyInfo.softwareVersion, "%d%d", infoRegisters[10], infoRegisters[11]);
+        renogyInfo.softwareVersion[6] = '\0';
 
         // Registers 0x016 to 0x017 - Hardware Version - 12-13
-        sprintf(renogyInfo.hardwareVersion, "%n%n", infoRegisters[12], infoRegisters[13]);
-        renogyInfo.hardwareVersion[4] = '\0';
+        sprintf(renogyInfo.hardwareVersion, "%d%d", infoRegisters[12], infoRegisters[13]);
+        renogyInfo.hardwareVersion[6] = '\0';
 
         // Registers 0x018 to 0x019 - Product Serial Number - 14-15
-        sprintf(renogyInfo.serialNumber, "%n%n", infoRegisters[14], infoRegisters[15]);
-        renogyInfo.serialNumber[4] = '\0';
+        sprintf(renogyInfo.serialNumber, "%d%d", infoRegisters[14], infoRegisters[15]);
+        renogyInfo.serialNumber[6] = '\0';
 
         renogyInfo.modbusAddress = infoRegisters[16] % 256;
         return true;
