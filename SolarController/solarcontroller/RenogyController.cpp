@@ -198,6 +198,7 @@ bool RenogyController::RenogyReadInfoRegisters()
         for (uint8_t i = 0; i < numInfoRegisters; i++)
         {
             infoRegisters[i] = node.getResponseBuffer(i);
+            Serial1.print("Register "); Serial1.print (i); Serial1.print(" value ");  Serial1.println(infoRegisters[i]);
         }
 
         // read and process each value
