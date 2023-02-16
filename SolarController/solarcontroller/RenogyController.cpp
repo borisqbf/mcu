@@ -135,10 +135,9 @@ bool RenogyController::RenogyReadDataRegisters()
         renogyData.batteryVoltage = dataRegisters[1] * 0.1;
         renogyData.batteryChargingCurrent = dataRegisters[2] * 0.01;
 
-        // 0x103 returns two bytes, one for battery and one for controller temp in c
-        uint16_t rawData = dataRegisters[3]; // eg 5913
-        renogyData.controllerTemperature = rawData / 256;
-        renogyData.batteryTemperature = rawData % 256;
+        uint16_t rawData = dataRegisters[3]; 
+        renogyData.controllerTemperature = rawData / 256; // high byte
+        renogyData.batteryTemperature = rawData % 256; // low byte
 
         renogyData.loadVoltage = dataRegisters[4] * 0.1;
         renogyData.loadCurrent = dataRegisters[5] * 0.01;
@@ -146,7 +145,7 @@ bool RenogyController::RenogyReadDataRegisters()
         renogyData.panelVoltage = dataRegisters[7] * 0.1;
         renogyData.panelCurrent = dataRegisters[8] * 0.01;
         renogyData.panelPower = dataRegisters[9];
-        // Register 0x10A - Turn on load, write register - 10
+
         renogyData.minBatteryVoltageToday = dataRegisters[11] * 0.1;
         renogyData.maxBatteryVoltageToday = dataRegisters[12] * 0.1;
         renogyData.maxChargingCurrentToday = dataRegisters[13] * 0.01;
@@ -167,8 +166,8 @@ bool RenogyController::RenogyReadDataRegisters()
         memcpy(&renogyData.cumulativePowerConsumption, &(dataRegisters[30]), 4);
 
         rawData = dataRegisters[32];
-        renogyData.loadState = rawData / 256;
-        renogyData.chargingState = rawData % 256;
+        renogyData.loadState = rawData / 256; // high byte
+        renogyData.chargingState = rawData % 256; // low byte
         renogyData.controllerFaultsHi = dataRegisters[33];
         renogyData.controllerFaultsLo = dataRegisters[34];
         return true;
@@ -200,35 +199,24 @@ bool RenogyController::RenogyReadInfoRegisters()
             infoRegisters[i] = node.getResponseBuffer(i);
         }
 
-        // read and process each value
-        // Register 0x0A - Controller voltage and Current Rating - 0
         rawData = infoRegisters[0];
-        renogyInfo.maxSupportedVltage = rawData / 256;
-        renogyInfo.chargingCurrentRating = rawData % 256;
-
-        // Register 0x0B - Controller discharge current and productType - 1
+        renogyInfo.maxSupportedVltage = rawData / 256;    // high byte
+        renogyInfo.chargingCurrentRating = rawData % 256; // low byte
         rawData = infoRegisters[1];
-        renogyInfo.dischargingCurrentRating = rawData / 256;
-        renogyInfo.productType = rawData % 256;
-
-        // Registers 0x0C to 0x13 - Product Model String - 2-9
+        renogyInfo.dischargingCurrentRating = rawData / 256; // high byte
+        renogyInfo.productType = rawData % 256; // low byte
         char *modelNo = (char *)&(infoRegisters[2]);
         strncpy(renogyInfo.productModel, modelNo, 16);
         renogyInfo.productModel[16] = '\0';
 
-        // Registers 0x014 to 0x015 - Software Version - 10-11
         sprintf(renogyInfo.softwareVersion, "%d%d", infoRegisters[10], infoRegisters[11]);
         renogyInfo.softwareVersion[6] = '\0';
-
-        // Registers 0x016 to 0x017 - Hardware Version - 12-13
         sprintf(renogyInfo.hardwareVersion, "%d%d", infoRegisters[12], infoRegisters[13]);
         renogyInfo.hardwareVersion[6] = '\0';
-
-        // Registers 0x018 to 0x019 - Product Serial Number - 14-15
         sprintf(renogyInfo.serialNumber, "%d%d", infoRegisters[14], infoRegisters[15]);
         renogyInfo.serialNumber[6] = '\0';
 
-        renogyInfo.modbusAddress = infoRegisters[16] % 256;
+        renogyInfo.modbusAddress = infoRegisters[16] % 256; // low byte
         return true;
     }
 }
@@ -253,7 +241,7 @@ bool RenogyController::GetRenogyData()
         Serial1.println(renogyInfo.maxSupportedVltage);
         Serial1.print("Amp rating: ");
         Serial1.println(renogyInfo.chargingCurrentRating);
-        Serial1.print("Voltage rating: ");
+        Serial1.print("Discharge Current rating: ");
         Serial1.println(renogyInfo.dischargingCurrentRating);
         Serial1.print("Product type: ");
         Serial1.println(renogyInfo.productType);

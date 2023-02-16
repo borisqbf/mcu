@@ -14,11 +14,11 @@ const uint8_t RELAY_PIN = 13;
 enum PowerMode : byte
 {
   OnSolar = 0,
-  OnMain = 1
+  OnGrid = 1
 };
 
 PowerMode mode = OnSolar;
-float OnMainThreshold = 21;
+float OnGridThreshold = 21;
 float OnSolarThreshold = 24.0;
 unsigned long lastPressed = 0;
 #pragma endregion
@@ -38,9 +38,9 @@ void ToSolarMode()
 
 void ToMainMode()
 {
-  if (mode == OnMain)
+  if (mode == OnGrid)
     return;
-  mode = OnMain;
+  mode = OnGrid;
   digitalWrite(MODE_PIN, LOW);
   digitalWrite(RELAY_PIN, LOW);
 }
@@ -103,7 +103,7 @@ void loop()
       if (!digitalRead(MANUAL_PIN))
       {
         float batteryVoltage = renogyController->GetBatteryVoltage();
-        if (batteryVoltage < OnMainThreshold)
+        if (batteryVoltage < OnGridThreshold && batteryVoltage > 7.0) // to protect from bad reads, etc
         {
           mqttController->PublishMessage("Switching to mains power");
           ToMainMode();
