@@ -45,6 +45,8 @@ public:
 private:
     bool RenogyReadInfoRegisters();
     bool RenogyReadDataRegisters();
+    uint32_t Combined(uint16_t low, uint16_t high);
+   
     unsigned long lastTimeRenogyPolled;
 
     RenogyInfo renogyInfo;

@@ -79,6 +79,11 @@ void RenogyController::HandleModbusError(uint8_t errorCode)
     mqttController->PublishMessage(errorStr);
 }
 
+uint32_t RenogyController::Combined(uint16_t low, uint16_t high)
+{
+    return (static_cast<uint32_t>(high) << 16) | ((static_cast<uint32_t>(low)) & 0xFFFF);
+}
+
 bool RenogyController::RenogyReadDataRegisters()
 {
     uint8_t result;
@@ -160,10 +165,10 @@ bool RenogyController::RenogyReadDataRegisters()
         renogyData.totalNumBatteryOverDischarges = dataRegisters[22];
         renogyData.totalNumBatteryFullCharges = dataRegisters[23];
 
-        memcpy(&renogyData.totalChargingAmphours, &(dataRegisters[24]), 4);
-        memcpy(&renogyData.totalDischargingAmphours, &(dataRegisters[26]), 4);
-        memcpy(&renogyData.cumulativePowerGeneration, &(dataRegisters[28]), 4);
-        memcpy(&renogyData.cumulativePowerConsumption, &(dataRegisters[30]), 4);
+        renogyData.totalChargingAmphours = Combined(dataRegisters[24], dataRegisters[25]);
+        renogyData.totalDischargingAmphours = Combined(dataRegisters[26], dataRegisters[27]);
+        renogyData.cumulativePowerGeneration = Combined(dataRegisters[28], dataRegisters[29]);
+        renogyData.cumulativePowerGeneration = Combined(dataRegisters[30], dataRegisters[31]);
 
         rawData = dataRegisters[32];
         renogyData.loadState = rawData / 256; // high byte
