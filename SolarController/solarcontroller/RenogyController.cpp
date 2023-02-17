@@ -165,10 +165,10 @@ bool RenogyController::RenogyReadDataRegisters()
         renogyData.totalNumBatteryOverDischarges = dataRegisters[22];
         renogyData.totalNumBatteryFullCharges = dataRegisters[23];
 
-        renogyData.totalChargingAmphours = Combined(dataRegisters[24], dataRegisters[25]);
-        renogyData.totalDischargingAmphours = Combined(dataRegisters[26], dataRegisters[27]);
-        renogyData.cumulativePowerGeneration = Combined(dataRegisters[28], dataRegisters[29]);
-        renogyData.cumulativePowerGeneration = Combined(dataRegisters[30], dataRegisters[31]);
+        renogyData.totalChargingAmphours = Combined(dataRegisters[25], dataRegisters[24]);
+        renogyData.totalDischargingAmphours = Combined(dataRegisters[27], dataRegisters[26]);
+        renogyData.cumulativePowerGeneration = Combined(dataRegisters[29], dataRegisters[28]);
+        renogyData.cumulativePowerConsumption = Combined(dataRegisters[31], dataRegisters[30]);
 
         rawData = dataRegisters[32];
         renogyData.loadState = rawData / 256; // high byte
