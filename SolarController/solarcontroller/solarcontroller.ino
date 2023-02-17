@@ -31,6 +31,7 @@ void ToSolarMode()
 {
   if (mode == OnSolar)
     return;
+  mqttController->PublishMessage("Switching to solar");
   mode = OnSolar;
   digitalWrite(MODE_PIN, HIGH);
   digitalWrite(RELAY_PIN, HIGH);
@@ -40,6 +41,7 @@ void ToMainMode()
 {
   if (mode == OnGrid)
     return;
+  mqttController->PublishMessage("Switching to mains power");
   mode = OnGrid;
   digitalWrite(MODE_PIN, LOW);
   digitalWrite(RELAY_PIN, LOW);
@@ -105,12 +107,10 @@ void loop()
         float batteryVoltage = renogyController->GetBatteryVoltage();
         if (batteryVoltage < OnGridThreshold && batteryVoltage > 7.0) // to protect from bad reads, etc
         {
-          mqttController->PublishMessage("Switching to mains power");
           ToMainMode();
         }
         else if (batteryVoltage > OnSolarThreshold)
         {
-          mqttController->PublishMessage("Switching to solar");
           ToSolarMode();
         }
       }
