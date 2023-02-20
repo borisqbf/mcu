@@ -50,10 +50,10 @@ private:
     // are present.
     BearSSL::CertStore certStore;
 
-    const char *mqttServer = "299d6fc93f0945089400ce1c143e1ebb.s2.eu.hivemq.cloud";
+    const char *mqttServer = "XXXXX.s2.eu.hivemq.cloud";
 
-    const char *mqttUser = "boris_qbf";
-    const char *mqttPassword = "mqttReward00";
+    const char *mqttUser = "XXXX";
+    const char *mqttPassword = "XXXX";
     const char *family = "solar";
     unsigned long lastTimeTelemetrySent;
     WiFiController *wifiController;

@@ -29,20 +29,10 @@ class WiFiController
         static void onWifiConnect(const WiFiEventStationModeGotIP &event);
         static void onWifiDisconnect(const WiFiEventStationModeDisconnected &event);
         // WI-FI settings
-        const char *ssid = "y-Dacha";
-        const char *pass = ".QbfReward00+";
+        const char *ssid = "your SID";
+        const char *pass = "XXXX";
         unsigned long lastTimeWiFiSuccess;
 };
 
 #endif
 
-/*
-ssid = "QBF";          // your network SSID (name)
-pass = "!QbfReward00"; // your network password
-
-ssid = "y-Dacha";       // your network SSID (name)
-pass = ".QbfReward00+"; // your network password
-
-ssid = "Boris-iPhone";          // your network SSID (name)
-pass = "reward00"; // your network password
-*/
