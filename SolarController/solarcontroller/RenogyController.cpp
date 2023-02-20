@@ -121,8 +121,7 @@ bool RenogyController::RenogyReadDataRegisters()
         renogyData.totalNumBatteryFullCharges = 0;
         renogyData.loadState = 0;
         renogyData.chargingState = 0;
-        renogyData.controllerFaultsHi = 0;
-        renogyData.controllerFaultsLo = 0;
+        renogyData.controllerFaults = 0;
         renogyData.totalChargingAmphours = 0;
         renogyData.totalDischargingAmphours = 0;
         renogyData.cumulativePowerGeneration = 0;
@@ -173,8 +172,7 @@ bool RenogyController::RenogyReadDataRegisters()
         rawData = dataRegisters[32];
         renogyData.loadState = rawData / 256; // high byte
         renogyData.chargingState = rawData % 256; // low byte
-        renogyData.controllerFaultsHi = dataRegisters[33];
-        renogyData.controllerFaultsLo = dataRegisters[34];
+        renogyData.controllerFaults = Combined(dataRegisters[34], dataRegisters[33]);
         return true;
     }
 }
@@ -231,6 +229,7 @@ bool RenogyController::GetRenogyData()
     bool infoRegistersOK = false;
     bool dataRegistersOk = false;
     Serial1.println("Polling Renogy");
+    /*
     static uint32_t i;
     i++;
 
@@ -238,7 +237,7 @@ bool RenogyController::GetRenogyData()
     node.setTransmitBuffer(0, lowWord(i));
     // set word 1 of TX buffer to most-significant word of counter (bits 31..16)
     node.setTransmitBuffer(1, highWord(i));
-
+    */
     if (RenogyReadInfoRegisters())
     {
         Serial1.println("Info Registers");
@@ -318,10 +317,8 @@ bool RenogyController::GetRenogyData()
         Serial1.println(renogyData.loadState);
         Serial1.print("Charging State: ");
         Serial1.println(renogyData.chargingState);
-        Serial1.print("Controller Faults High Word: ");
-        Serial1.println(renogyData.controllerFaultsHi);
-        Serial1.print("Controller Faults Low Word: ");
-        Serial1.println(renogyData.controllerFaultsLo);
+        Serial1.print("Controller Faults: ");
+        Serial1.println(renogyData.controllerFaults);
         dataRegistersOk = true;
     }
     return dataRegistersOk && infoRegistersOK;

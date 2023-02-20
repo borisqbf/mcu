@@ -5,16 +5,18 @@
 char* RenogyData::toJSON()
 {
     memset(buffer, '\0', sizeof(buffer));
-    sprintf(buffer, "{\n\"BatteryVoltage\":\"%.2f\",\n"
-                    "\"BatteryChargingCurrent\":\"%.2f\",\n"
-                    "\"PanelVoltage\":\"%.2f\",\n"
-                    "\"PanelCurrent\":\"%.2f\",\n"
+    sprintf(buffer, "{\n\"BatV\":\"%.2f\",\n"
+                    "\"BatA\":\"%.2f\",\n"
+                    "\"PanelV\":\"%.2f\",\n"
+                    "\"PanelA\":\"%.2f\",\n"
                     /*
                     "\"BatteryCapacitySoc\":\"%u\",\n"
                     "\"BatteryTemperature\":\"%u\",\n"
-                    "\"ControllerTemperature\":\"%u\",\n"*/
+                    "\"ControllerTemperature\":\"%u\",\n"
+                    */
                     "\"PanelPower\":\"%u\",\n"
-                    /*"\"LoadVoltage\":\"%.2f\",\n"
+                    /*
+                    "\"LoadVoltage\":\"%.2f\",\n"
                      "\"LoadCurrent\":\"%.2f\",\n"
                      "\"LoadPower\":\"%u\",\n"
                      "\"MinBatteryVoltageToday\":\"%.2f\",\n"
@@ -34,10 +36,10 @@ char* RenogyData::toJSON()
                      "\"TotalDischargingAmphours\":\"%u\",\n"
                      "\"CumulativePowerGeneration\":\"%u\",\n"
                      "\"CumulativePowerConsumption\":\"%u\",\n"
-                     "\"LoadState\":\"%u\",\n"*/
+                     "\"LoadState\":\"%u\",\n"
+                    */
                     "\"ChargingState\":\"%u\",\n"
-                    "\"ControllerFaultsHi\":\"%u\",\n"
-                    "\"ControllerFaultsLo\":\"%u\"\n}\n",
+                    "\"ControllerFaults\":\"%u\"\n}\n",
             batteryVoltage,
             batteryChargingCurrent,
             panelVoltage,
@@ -68,7 +70,6 @@ char* RenogyData::toJSON()
             cumulativePowerConsumption,
             loadState,*/
             chargingState,
-            controllerFaultsHi,
-            controllerFaultsLo);
+            controllerFaults);
     return buffer;
 }

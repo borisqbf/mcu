@@ -38,8 +38,7 @@ public:
     uint32_t cumulativePowerConsumption;   // kW hours
     uint8_t loadState;                     // on-off, street light brightness
     uint8_t chargingState;
-    uint16_t controllerFaultsHi;
-    uint16_t controllerFaultsLo; // Reserved
+    uint16_t controllerFaults;
 
     char *toJSON();
 
