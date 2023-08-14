@@ -9,8 +9,9 @@
 
 const int led = 13;
 int distance = 0;
-const int maxWaterColumnHeight = 200; // cm
-const int minWaterColumnHeight = 15;  // cm
+const int maxWaterColumnHeight = 215;    // cm
+const int bottomWaterColumnHeight = 20;  // cm
+const int topDeadSpace = 15;             // cm
 
 const int TOF250address = 0x52;
 const int LCDaddress = 0x27;
@@ -23,6 +24,9 @@ unsigned long lastTimePolled = 0;
 
 const char *ssid = "QBF";          // your network SSID (name)
 const char *pass = "!QbfReward00"; // your network password
+const char *absLevelURL = "/api/level-abs";
+const char *pcLevelURL = "/api/level-pc";
+
 // Create an ESP8266 WiFiClient class to connect to the MQTT server.
 WiFiClient client;
 ESP8266WebServer server(80);
@@ -48,8 +52,8 @@ void SetupWiFiClient()
   }
 
   server.on("/", HandleRoot);        // Associate handler function to path
-  server.on("/api/level-pc", GetLevelPercentage); // Associate handler function to path
-  server.on("/api/level-abs", GetLevelAbsolute); // Associate handler function to path
+  server.on(pcLevelURL, GetLevelPercentage);    // Associate handler function to path
+  server.on(absLevelURL, GetLevelAbsolute);      // Associate handler function to path
   server.onNotFound(HandleNotFound);
 
   server.begin(); // Start server
@@ -59,7 +63,14 @@ void SetupWiFiClient()
 void HandleRoot()
 {
   digitalWrite(led, 1);
-  server.send(200, "text/plain", "Hello resolved by mDNS !");
+ 
+  String message = "Hello resolved by mDNS!\n\n";
+  message += "Available routes are ";
+  message += pcLevelURL;
+  message += " and ";
+  message += absLevelURL;
+
+  server.send(200, "text/plain", message);
   digitalWrite(led, 0);
 }
 
@@ -78,6 +89,11 @@ void HandleNotFound()
   {
     message += " " + server.argName(i) + ": " + server.arg(i) + "\n";
   }
+  message += "\nAvailable routes are ";
+  message += pcLevelURL;
+  message += " and ";
+  message += absLevelURL;
+
   server.send(404, "text/plain", message);
   digitalWrite(led, 0);
 }
@@ -121,12 +137,9 @@ void GetLidarDataFromI2C(const int addr)
 
 void CalculatePercentage()
 {
-  double d = distance - minWaterColumnHeight;
-  if (d < 0)
-  {
-    d = 0;
-  }
-  waterLevelPercentage = (1 - (double)d / maxWaterColumnHeight) * 100;
+  double d = distance - topDeadSpace;
+
+  waterLevelPercentage = (1 - (double)d / (maxWaterColumnHeight - topDeadSpace - bottomWaterColumnHeight)) * 100;
   if (waterLevelPercentage > 100)
   {
     waterLevelPercentage = 100;
