@@ -281,7 +281,7 @@ bool RenogyController::GetRenogyData()
         Serial1.println(renogyData.panelPower);
         Serial1.print("Min Battery voltage today: ");
         Serial1.println(renogyData.minBatteryVoltageToday);
-        Serial1.print("Maxn Battery voltage today: ");
+        Serial1.print("Max Battery voltage today: ");
         Serial1.println(renogyData.maxBatteryVoltageToday);
         Serial1.print("Max charging current today: ");
         Serial1.println(renogyData.maxChargingCurrentToday);
