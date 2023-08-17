@@ -108,7 +108,7 @@ void GetLevelPercentage()
 void GetLevelAbsolute()
 {
   digitalWrite(led, 1);
-  server.send(200, "text/plain", String(distance).c_str());
+  server.send(200, "text/plain", String(distance, 2).c_str());
   digitalWrite(led, 0);
 }
 
