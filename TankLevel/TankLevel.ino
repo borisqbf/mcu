@@ -8,10 +8,10 @@
 #define REG_00H 0x0
 
 const int led = 13;
-int distance = 0;
-const int maxWaterColumnHeight = 215;    // cm
-const int bottomWaterColumnHeight = 20;  // cm
-const int topDeadSpace = 15;             // cm
+double distance = 0;
+const int maxWaterColumnHeight = 215;   // cm
+const int bottomWaterColumnHeight = 20; // cm
+const int topDeadSpace = 15;            // cm
 
 const int TOF250address = 0x52;
 const int LCDaddress = 0x27;
@@ -51,9 +51,9 @@ void SetupWiFiClient()
     Serial.println("MDNS started");
   }
 
-  server.on("/", HandleRoot);        // Associate handler function to path
-  server.on(pcLevelURL, GetLevelPercentage);    // Associate handler function to path
-  server.on(absLevelURL, GetLevelAbsolute);      // Associate handler function to path
+  server.on("/", HandleRoot);                // Associate handler function to path
+  server.on(pcLevelURL, GetLevelPercentage); // Associate handler function to path
+  server.on(absLevelURL, GetLevelAbsolute);  // Associate handler function to path
   server.onNotFound(HandleNotFound);
 
   server.begin(); // Start server
@@ -63,7 +63,7 @@ void SetupWiFiClient()
 void HandleRoot()
 {
   digitalWrite(led, 1);
- 
+
   String message = "Hello resolved by mDNS!\n\n";
   message += "Available routes are ";
   message += pcLevelURL;
@@ -112,27 +112,40 @@ void GetLevelAbsolute()
   digitalWrite(led, 0);
 }
 
-void GetLidarDataFromI2C(const int addr)
+double GetLidarDataFromI2C(const int addr)
 {
   byte buff[2];
   byte i = 0;
+  double average = 0;
+  int numOfIterationsLeft = 100;
+  int d; // current measurement
 
   Wire.beginTransmission(addr);
   Wire.write(REG_00H);
   Wire.endTransmission();
   Wire.requestFrom(addr, 2);
 
-  while (Wire.available())
+  while (numOfIterationsLeft > 0) // calculate average of 100 measurements ignoring bottom reflections
   {
-    buff[i++] = Wire.read();
-    if (i >= 2)
+    while (Wire.available())
     {
-      i = 0;
-      distance = buff[0] * 256 + buff[1];
-      if (distance > 250)
-        distance = 250;
+      buff[i++] = Wire.read();
+      if (i >= 2)
+      {
+        i = 0;
+        d = buff[0] * 256 + buff[1];
+        if (d > 250)
+          d = 250;
+      }
+    }
+    if (d <= maxWaterColumnHeight)
+    {
+      average += d;
+      --numOfIterationsLeft;
     }
   }
+
+  return average / 100;
 }
 
 void CalculatePercentage()
@@ -169,7 +182,7 @@ void loop()
   if ((millis() - lastTimePolled) > pollingPeriodicity)
   {
     lastTimePolled = millis();
-    GetLidarDataFromI2C(TOF250address);
+    distance = GetLidarDataFromI2C(TOF250address);
     CalculatePercentage();
     int pc = waterLevelPercentage * 100;
     lbg.drawValue(pc, 10000);
