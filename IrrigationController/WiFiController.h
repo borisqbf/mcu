@@ -3,33 +3,36 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include <WiFiESP.h>
-
-// Create an ESP8266 WiFiClient class to connect to the MQTT server.
-const unsigned long noWiFiTimeLimit = 6 * 60 * 60 * 1000; // six hours
-
-const uint8_t wifiConnecting = 3;
-const uint8_t wifiConnected = 0;
-const uint8_t wifiError = 1;
+#include <time.h>
+#include <WiFiEsp.h>
+#include <WiFiEspUdp.h>
 
 class WiFiController
 {
     public:
-        bool Setup();
+        void Setup();
         static WiFiController *GetInstance();
         WiFiController();
+        time_t GetNTPTime();
+        void Alert(const char*message);
 
     private:
-        WiFiClientSecure client;
-
-        WiFiEventHandler wifiConnectHandler;
-        WiFiEventHandler wifiDisconnectHandler;
-        static void onWifiConnect(const WiFiEventStationModeGotIP &event);
-        static void onWifiDisconnect(const WiFiEventStationModeDisconnected &event);
+        WiFiEspClient client;
         // WI-FI settings
         const char *ssid = "QBF";
         const char *pass = "!QbfReward00";
-        unsigned long lastTimeWiFiSuccess;
+        int status = WL_IDLE_STATUS; // the Wifi radio's status
+        const int timeZone = 10;
+        const char *timeServer = "au.pool.ntp.org"; // NTP server
+        unsigned int localPort = 2390;            // local port to listen for UDP packets
+
+        const int NTP_PACKET_SIZE = 48; // NTP timestamp is in the first 48 bytes of the message
+        const int UDP_TIMEOUT = 2000;   // timeout in miliseconds to wait for an UDP packet to arrive
+
+        byte *packetBuffer = NULL; // buffer to hold incoming and outgoing packets
+        WiFiEspUDP Udp;
+
+        void SendNTPpacket(const char *ntpSrv);
 };
 
 #endif

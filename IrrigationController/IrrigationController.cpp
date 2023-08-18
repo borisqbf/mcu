@@ -2,6 +2,7 @@
 
 IrrigationController::IrrigationController(/* args */)
 {
+    wifiController = WiFiController::GetInstance();
 }
 
 IrrigationController::~IrrigationController()
@@ -10,18 +11,12 @@ IrrigationController::~IrrigationController()
 
 void IrrigationController::Initialize()
 {
-    configTime(gmtOffset_sec, daylightOffset_sec, ntpServer1, ntpServer2);
-    if (!getLocalTime(&timeinfo))
-    {
-        Serial.println("Failed to obtain time");
-        return;
-    }
-    PrintLocalTime();
+    wifiController->GetNTPTime();
 }
 
 void IrrigationController::ProcesMainLoop()
 {
-    if (currentState == State.Idle)
+    if (currentState == State::Idle)
     {
         if (CheckStartTime())
         {
@@ -31,51 +26,54 @@ void IrrigationController::ProcesMainLoop()
             OpenValve();
         }
     }
-    else if (currentState == State.Watering)
+    else if (currentState == State::Watering)
     {
         if (CheckWateringTarget())
         {
+            Chronos::Span::Absolute duration = Chronos::DateTime::now() - stateChangedAt;
             CloseValve();
-            Alert("Watering finished at " + Now() + " Watering target of " + waterVolumeTarget + " liters has been reached.");
+            wifiController->Alert("Watering finished at " + Chronos::DateTime::now() + " Watering target of " + waterVolumeTarget + " liters has been reached. The process took " + duration.minutes() + " minutes.");
         }
         else if (CheckEndTime())
         {
             CloseValve();
-            Alert("Watering aborted at " + Now() + " after " + maxWateringTime + " minutes. Watering target of " + waterVolumeTarget + " liters has not been reached. " + waterVolume + " liters have been dispensed");
+            wifiController->Alert("Watering aborted at " + Chronos::DateTime::now() + " after " + maxWateringTime + " minutes. Watering target of " + waterVolumeTarget + " liters has not been reached. " + waterVolume + " liters have been dispensed");
         }
         else
         {
-            if(!CheckWaterFlow())
-                Alert("Insufficient waterflow.")
+            if (!CheckWaterFlow())
+                wifiController->Alert("Insufficient waterflow.");
         }
     }
-    else if (currentState == State.OpeningValve)
+    else if (currentState == State::OpeningValve)
     {
-        if ((Now() - stateChangedAt) > TimeSpan(0,0, maxValveActionTime))
+        if ((Chronos::DateTime::now() - stateChangedAt) > Chronos::Span::Seconds(maxValveActionTime))
         {
-            Alert("Unable to open Valve.")
+            wifiController->Alert("Unable to open Valve.");
         }
     }
-    else if (currentState == State.ClosingValve)
+    else if (currentState == State::ClosingValve)
     {
-        if ((Now() - stateChangedAt) > TimeSpan(0, 0, maxValveActionTime))
+        if ((Chronos::DateTime::now() - stateChangedAt) > Chronos::Span::Seconds(maxValveActionTime))
         {
-            Alert("Unable to close Valve")
+            wifiController->Alert("Unable to close Valve");
         }
     }
 }
 
 void IrrigationController::ValveOpen()
 {
-    currentState = State.Watring;
-    stateChangedAt = Now();
+    currentState = State::Watering;
+    stateChangedAt = Chronos::DateTime::now();
 }
 
 void IrrigationController::ValveClosed()
 {
-    currentState = State.Idle;
-    stateChangedAt = Now();
+    currentState = State::Idle;
+    stateChangedAt = Chronos::DateTime::now();
 }
+
+
 
 bool IrrigationController::CheckStartTime()
 {
@@ -92,23 +90,9 @@ bool IrrigationController::CheckWaterFlow()
     return false;
 }
 
-void IrrigationController::PrintLocalTime()
+bool IrrigationController::CheckWateringTarget()
 {
-    Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S");
-    Serial.print("Day of week: ");
-    Serial.println(&timeinfo, "%A");
-    Serial.print("Month: ");
-    Serial.println(&timeinfo, "%B");
-    Serial.print("Day of Month: ");
-    Serial.println(&timeinfo, "%d");
-    Serial.print("Year: ");
-    Serial.println(&timeinfo, "%Y");
-    Serial.print("Hour: ");
-    Serial.println(&timeinfo, "%H");
-    Serial.print("Minute: ");
-    Serial.println(&timeinfo, "%M");
-    Serial.print("Second: ");
-    Serial.println(&timeinfo, "%S");
+    return false;
 }
 
 void IrrigationController::SetEndTime()
@@ -121,12 +105,12 @@ void IrrigationController::SetNextStartTime()
 
 void IrrigationController::CloseValve()
 {
-    currentState = State.ClosingValve;
-    stateChangedAt = Now();
+    currentState = State::ClosingValve;
+    stateChangedAt = Chronos::DateTime::now();
 }
 
 void IrrigationController::OpenValve()
 {
-    currentState = State.OpeningValve;
-    stateChangedAt = Now();
+    currentState = State::OpeningValve;
+    stateChangedAt = Chronos::DateTime::now();
 }
