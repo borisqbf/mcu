@@ -2,7 +2,7 @@
 
 IrrigationController::IrrigationController(/* args */)
 {
-    wifiController = WiFiController::GetInstance();
+
 }
 
 IrrigationController::~IrrigationController()
@@ -11,6 +11,7 @@ IrrigationController::~IrrigationController()
 
 void IrrigationController::Initialize()
 {
+    wifiController = WiFiController::GetInstance();
     wifiController->GetNTPTime();
 }
 
@@ -28,16 +29,21 @@ void IrrigationController::ProcesMainLoop()
     }
     else if (currentState == State::Watering)
     {
+        char message[250];
         if (CheckWateringTarget())
         {
-            Chronos::Span::Absolute duration = Chronos::DateTime::now() - stateChangedAt;
+            Chronos::DateTime n = Chronos::DateTime::now();
+            Chronos::Span::Absolute duration = n - stateChangedAt;
             CloseValve();
-            wifiController->Alert("Watering finished at " + Chronos::DateTime::now() + " Watering target of " + waterVolumeTarget + " liters has been reached. The process took " + duration.minutes() + " minutes.");
+
+            sprintf(message, "Watering finished at %0u/%0u/%0u %0u:%0u.  Watering target of %u  liters has been reached. The process took %u minutes.", n.day(), n.month(), n.year(), n.hour(), n.minute(), waterVolumeTarget, duration.minutes());
+            wifiController->Alert(message);
         }
         else if (CheckEndTime())
         {
+            Chronos::DateTime n = Chronos::DateTime::now();
             CloseValve();
-            wifiController->Alert("Watering aborted at " + Chronos::DateTime::now() + " after " + maxWateringTime + " minutes. Watering target of " + waterVolumeTarget + " liters has not been reached. " + waterVolume + " liters have been dispensed");
+            sprintf(message, "Watering aborted at %0u/%0u/%0u %0u:%0u after %u minutes. Watering target of %u  liters has not been reached. %u liters have been dispensed", n.day(), n.month(), n.year(), n.hour(), n.minute(), maxWateringTime, waterVolumeTarget, waterVolume);
         }
         else
         {

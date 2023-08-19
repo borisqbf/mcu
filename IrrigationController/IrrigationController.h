@@ -16,7 +16,7 @@ enum State
 class IrrigationController
 {
 private:
-    static WiFiController *wifiController = NULL;
+    WiFiController *wifiController = NULL;
     enum State currentState = State::Idle;
     Chronos::DateTime stateChangedAt;
     const int maxValveActionTime = 10;
@@ -32,7 +32,7 @@ private:
     void SetNextStartTime();
     void CloseValve();
     void OpenValve();
-
+ 
 public:
     IrrigationController(/* args */);
     ~IrrigationController();
