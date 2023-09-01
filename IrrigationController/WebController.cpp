@@ -43,12 +43,14 @@ void WebController::ProcessMainLoop()
             if (client.available())
             {                           // if there's bytes to read from the client,
                 char c = client.read(); // read a byte, then
+                Serial.print(c);
                 buf.push(c);            // push it to the ring buffer
 
                 // you got two newline characters in a row
                 // that's the end of the HTTP request, so send a response
                 if (buf.endsWith("\r\n\r\n"))
                 {
+                    Serial.println("Sending Responce");
                     SendHttpResponse(client);
                     break;
                 }
