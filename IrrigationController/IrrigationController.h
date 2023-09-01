@@ -42,4 +42,6 @@ public:
     void ValveClosed();
 };
 
+typedef void (IrrigationController::*ValveActionFn)(void);
+
 #endif

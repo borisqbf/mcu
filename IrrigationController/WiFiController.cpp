@@ -5,7 +5,7 @@ static WiFiController theInstance;
 WiFiController* WiFiController::GetInstance()
 {
     return &theInstance;
-};
+}
 
 WiFiController::WiFiController()
 {
