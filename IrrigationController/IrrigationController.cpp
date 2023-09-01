@@ -12,7 +12,7 @@ IrrigationController::~IrrigationController()
 void IrrigationController::Initialize()
 {
     wifiController = WiFiController::GetInstance();
-    //wifiController->GetNTPTime();
+    wifiController->GetNTPTime();
 }
 
 void IrrigationController::ProcesMainLoop()
