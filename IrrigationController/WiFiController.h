@@ -33,6 +33,7 @@ class WiFiController
         WiFiEspUDP Udp;
 
         void SendNTPpacket(const char *ntpSrv);
+        void PrintWifiStatus();
 };
 
 #endif

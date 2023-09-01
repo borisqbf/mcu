@@ -1,4 +1,3 @@
-
 #include "WiFiController.h"
 #include "IrrigationController.h"
 #include "WebController.h"
@@ -15,6 +14,7 @@ const byte interruptValveClosedPin = 3;
 
 void setup()
 {
+  Serial.begin(115200);
   wifi = WiFiController::GetInstance();
   wifi->Setup();
   

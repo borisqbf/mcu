@@ -1,8 +1,10 @@
 #include "WiFiController.h"
+#include "SoftwareSerial.h"
+SoftwareSerial Serial1(6, 7); // RX, TX
 
 static WiFiController theInstance;
 
-WiFiController* WiFiController::GetInstance()
+WiFiController *WiFiController::GetInstance()
 {
     return &theInstance;
 }
@@ -14,9 +16,15 @@ WiFiController::WiFiController()
 
 void WiFiController::Setup()
 {
-    WiFi.init(&Serial);
- 
+    Serial1.begin(9600);
+    WiFi.init(&Serial1);
 
+    if (WiFi.status() == WL_NO_SHIELD)
+    {
+        Serial.println("WiFi shield not present");
+        // don't continue
+        return;
+    }
     // attempt to connect to WiFi network
     while (status != WL_CONNECTED)
     {
@@ -25,6 +33,8 @@ void WiFiController::Setup()
         delay(500);
         Serial.print(".");
     }
+    Serial.println("You're connected to the network");
+    PrintWifiStatus();
 }
 
 time_t WiFiController::GetNTPTime()
@@ -54,6 +64,17 @@ time_t WiFiController::GetNTPTime()
     return 0; // return 0 if unable to get the time
 }
 
+void WiFiController::PrintWifiStatus()
+{
+    // print the SSID of the network you're attached to
+    Serial.print("SSID: ");
+    Serial.println(WiFi.SSID());
+
+    // print your WiFi shield's IP address
+    IPAddress ip = WiFi.localIP();
+    Serial.print("IP Address: ");
+    Serial.println(ip);
+}
 void WiFiController::Alert(const char *message)
 {
 }
