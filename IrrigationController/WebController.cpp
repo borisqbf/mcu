@@ -1,6 +1,7 @@
 #include "WebController.h"
 
 static WebController theInstance;
+RingBuffer buf(8);
 
 WebController *WebController::GetInstance()
 {
@@ -32,7 +33,6 @@ void WebController::Setup()
 
 void WebController::ProcessMainLoop()
 {
-    RingBuffer buf(8);
     WiFiEspClient client = server->available(); // listen for incoming clients
     if (client)
     {                                 // if you get a client,
@@ -43,14 +43,13 @@ void WebController::ProcessMainLoop()
             if (client.available())
             {                           // if there's bytes to read from the client,
                 char c = client.read(); // read a byte, then
-                Serial.print(c);
                 buf.push(c);            // push it to the ring buffer
 
                 // you got two newline characters in a row
                 // that's the end of the HTTP request, so send a response
                 if (buf.endsWith("\r\n\r\n"))
                 {
-                    Serial.println("Sending Responce");
+                    Serial.println("Sending Response");
                     SendHttpResponse(client);
                     break;
                 }
@@ -64,6 +63,7 @@ void WebController::ProcessMainLoop()
                 }
                 else if (buf.endsWith("GET /OFF"))
                 {
+                    Serial.println("Turn valve OFF");
                     if (actionController != NULL && OffAction != NULL)
                         (actionController->*OffAction)();
                 }

@@ -2,5 +2,5 @@
     "board": "arduino:avr:uno",
     "sketch": "IrrigationController.ino",
     "programmer": "arduinoisp",
-    "port": "COM8"
+    "port": "COM3"
 }
