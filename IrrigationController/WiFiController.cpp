@@ -34,6 +34,7 @@ void WiFiController::Setup()
         Serial.print(".");
     }
     Serial.println("You're connected to the network");
+    Udp.begin(localPort);
     PrintWifiStatus();
 }
 
