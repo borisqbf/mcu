@@ -89,7 +89,12 @@ void WebController::SendHttpResponse(WiFiEspClient client)
 
     // the content of the HTTP response follows the header:
     client.print("OK. Current time is ");
-    client.print(now());
+
+    char message[250];
+    Chronos::DateTime n = Chronos::DateTime::now();
+    sprintf(message, "%0u/%0u/%0u %0u:%0u.", n.day(), n.month(), n.year(), n.hour(), n.minute());
+
+    client.print(message);
     // The HTTP response ends with another blank line:
     client.println();
 }
