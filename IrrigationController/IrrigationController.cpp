@@ -45,7 +45,7 @@ void IrrigationController::ProcesMainLoop()
         {
             Chronos::DateTime n = Chronos::DateTime::now();
             CloseValve();
-            sprintf(message, "Watering aborted at %0u/%0u/%0u %0u:%0u after %u minutes. Watering target of %u  liters has not been reached. %u liters have been dispensed", n.day(), n.month(), n.year(), n.hour(), n.minute(), maxWateringTime, waterVolumeTarget, waterVolume);
+            sprintf(message, "Watering aborted at %02u/%02u/%u %02u:%02u after %u minutes. Watering target of %u  liters has not been reached. %u liters have been dispensed", n.day(), n.month(), n.year(), n.hour(), n.minute(), maxWateringTime, waterVolumeTarget, waterVolume);
         }
         else
         {

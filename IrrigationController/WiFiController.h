@@ -10,6 +10,7 @@
 #define timeServer "au.pool.ntp.org"
 #define UDP_TIMEOUT 2000
 #define NTP_PACKET_SIZE 48
+#define timeZone 10
 
 class WiFiController
 {
@@ -25,7 +26,7 @@ class WiFiController
         const char *ssid = "QBF";
         const char *pass = "!QbfReward00";
         int status = WL_IDLE_STATUS; // the Wifi radio's status
-        const int timeZone = 10;
+
 
         unsigned int localPort = 2390;            // local port to listen for UDP packets
 

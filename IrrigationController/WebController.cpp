@@ -92,7 +92,7 @@ void WebController::SendHttpResponse(WiFiEspClient client)
 
     char message[250];
     Chronos::DateTime n = Chronos::DateTime::now();
-    sprintf(message, "%0u/%0u/%0u %0u:%0u.", n.day(), n.month(), n.year(), n.hour(), n.minute());
+    sprintf(message, "%02u/%02u/%u %02u:%02u.", n.day(), n.month(), n.year(), n.hour(), n.minute());
 
     client.print(message);
     // The HTTP response ends with another blank line:
