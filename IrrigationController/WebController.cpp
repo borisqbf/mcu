@@ -51,21 +51,24 @@ void WebController::ProcessMainLoop()
                 {
                     Serial.println("Sending Response");
                     SendHttpResponse(client);
+                    buf.init();
                     break;
                 }
 
                 // Check to see if the client request was "GET /ON" or "GET /OFF":
                 if (buf.endsWith("GET /ON"))
                 {
-                    Serial.println("Turn valve ON");
                     if (actionController != NULL && OnAction != NULL)
+                    {
                         (actionController->*OnAction)();
+                    }
                 }
                 else if (buf.endsWith("GET /OFF"))
                 {
-                    Serial.println("Turn valve OFF");
                     if (actionController != NULL && OffAction != NULL)
+                    {
                         (actionController->*OffAction)();
+                    }
                 }
             }
         }

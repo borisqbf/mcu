@@ -23,11 +23,11 @@ void setup()
 
   web = WebController::GetInstance();
   web->Setup();
-
-  attachInterrupt(digitalPinToInterrupt(interruptValveOpenPin), ValveOpen, RISING);
-  attachInterrupt(digitalPinToInterrupt(interruptValveClosedPin), ValveClosed, RISING);
   web->SetOnAction(controller, &(controller->OpenValve));
   web->SetOffAction(controller, &(controller->CloseValve));
+  attachInterrupt(digitalPinToInterrupt(interruptValveOpenPin), ValveOpen, RISING);
+  attachInterrupt(digitalPinToInterrupt(interruptValveClosedPin), ValveClosed, RISING);
+
 }
 
 void loop() {

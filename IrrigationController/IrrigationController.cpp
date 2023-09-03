@@ -69,14 +69,14 @@ void IrrigationController::ProcesMainLoop()
 
 void IrrigationController::ValveOpen()
 {
-    Serial.println("Turn valve ON");
+    Serial.println("The valve is open");
     currentState = State::Watering;
     stateChangedAt = Chronos::DateTime::now();
 }
 
 void IrrigationController::ValveClosed()
 {
-    Serial.println("Turn valve OFF");
+    Serial.println("The valve is closed");
     currentState = State::Idle;
     stateChangedAt = Chronos::DateTime::now();
 }
@@ -111,12 +111,14 @@ void IrrigationController::SetNextStartTime()
 
 void IrrigationController::CloseValve()
 {
+    Serial.println("The valve is closing");
     currentState = State::ClosingValve;
     stateChangedAt = Chronos::DateTime::now();
 }
 
 void IrrigationController::OpenValve()
 {
+    Serial.println("The valve is opening");
     currentState = State::OpeningValve;
     stateChangedAt = Chronos::DateTime::now();
 }
