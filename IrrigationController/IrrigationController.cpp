@@ -1,4 +1,7 @@
 #include "IrrigationController.h"
+#include <TimeLib.h>
+
+
 
 IrrigationController::IrrigationController(/* args */)
 {
@@ -12,7 +15,6 @@ IrrigationController::~IrrigationController()
 void IrrigationController::Initialize()
 {
     wifiController = WiFiController::GetInstance();
-    wifiController->GetNTPTime();
 }
 
 void IrrigationController::ProcesMainLoop()

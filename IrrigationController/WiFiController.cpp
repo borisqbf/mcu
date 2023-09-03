@@ -1,8 +1,11 @@
 #include "WiFiController.h"
 #include "SoftwareSerial.h"
+#include <TimeLib.h>
 SoftwareSerial Serial1(6, 7); // RX, TX
 
 static WiFiController theInstance;
+byte packetBuffer[NTP_PACKET_SIZE];
+WiFiEspUDP Udp;
 
 WiFiController *WiFiController::GetInstance()
 {
@@ -11,7 +14,7 @@ WiFiController *WiFiController::GetInstance()
 
 WiFiController::WiFiController()
 {
-    packetBuffer = new byte[NTP_PACKET_SIZE];
+
 }
 
 void WiFiController::Setup()
@@ -36,6 +39,8 @@ void WiFiController::Setup()
     Serial.println("You're connected to the network");
     Udp.begin(localPort);
     PrintWifiStatus();
+    setSyncProvider(GetNTPTime);
+    setSyncInterval(3600); //every hour
 }
 
 time_t WiFiController::GetNTPTime()
@@ -114,7 +119,7 @@ void WiFiController::Alert(const char *message)
 
 void WiFiController::SendNTPpacket(const char *ntpSrv)
 {
-    memset(packetBuffer, 0, NTP_PACKET_SIZE);
+    memset(&packetBuffer, 0, NTP_PACKET_SIZE);
     // Initialize values needed to form NTP request
     // (see URL above for details on the packets)
 

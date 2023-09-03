@@ -88,8 +88,8 @@ void WebController::SendHttpResponse(WiFiEspClient client)
     client.println();
 
     // the content of the HTTP response follows the header:
-    client.print("OK");
-
+    client.print("OK. Current time is ");
+    client.print(now());
     // The HTTP response ends with another blank line:
     client.println();
 }
