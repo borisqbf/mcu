@@ -7,7 +7,7 @@
 #include <WiFiEsp.h>
 #include <WiFiEspUdp.h>
 
-#define timeServer "au.pool.ntp.org"
+#define timeServer "time.google.com"
 #define UDP_TIMEOUT 2000
 #define NTP_PACKET_SIZE 48
 #define timeZone 10

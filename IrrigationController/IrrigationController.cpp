@@ -109,7 +109,7 @@ char *IrrigationController::GetCurrentState()
     case State::OpeningValve:
         return "Opening Valve";
     case State::ClosingValve:
-        return "ClosingValve";
+        return "Closing Valve";
     default:
         return "Unknown";
     }
