@@ -70,20 +70,26 @@ void IrrigationController::ProcesMainLoop()
 
 void IrrigationController::ValveOpen()
 {
-    Serial.println("The valve is open");
-    currentState = State::Watering;
-    stateChangedAt = Chronos::DateTime::now();
-    digitalWrite(valveOpenPin, LOW);
-    digitalWrite(valveClosePin, LOW);
+    if (currentState == State::OpeningValve)
+    {
+        Serial.println("The valve is open");
+        currentState = State::Watering;
+        stateChangedAt = Chronos::DateTime::now();
+        digitalWrite(valveOpenPin, LOW);
+        digitalWrite(valveClosePin, LOW);
+    }
 }
 
 void IrrigationController::ValveClosed()
 {
-    Serial.println("The valve is closed");
-    currentState = State::Idle;
-    stateChangedAt = Chronos::DateTime::now();
-    digitalWrite(valveOpenPin, LOW);
-    digitalWrite(valveClosePin, LOW);
+    if (currentState == State::ClosingValve)
+    {
+        Serial.println("The valve is closed");
+        currentState = State::Idle;
+        stateChangedAt = Chronos::DateTime::now();
+        digitalWrite(valveOpenPin, LOW);
+        digitalWrite(valveClosePin, LOW);
+    }
 }
 
 bool IrrigationController::CheckStartTime()
