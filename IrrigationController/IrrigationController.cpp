@@ -92,6 +92,29 @@ void IrrigationController::ValveClosed()
     }
 }
 
+void IrrigationController::Reset()
+{
+    Serial.println("Resetting");
+    currentState = State::Idle;
+}
+
+char *IrrigationController::GetCurrentState()
+{
+    switch (currentState)
+    {
+    case State::Idle:
+        return "Idle";
+    case State::Watering:
+        return "Watering";
+    case State::OpeningValve:
+        return "Opening Valve";
+    case State::ClosingValve:
+        return "ClosingValve";
+    default:
+        return "Unknown";
+    }
+}
+
 bool IrrigationController::CheckStartTime()
 {
     return false;

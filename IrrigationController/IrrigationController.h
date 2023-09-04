@@ -44,6 +44,8 @@ public:
     void ProcesMainLoop();
     void ValveOpen();
     void ValveClosed();
+    void Reset();
+    char *GetCurrentState();
 };
 
 typedef void (IrrigationController::*ValveActionFn)(void);

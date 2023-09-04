@@ -13,6 +13,7 @@ public:
     static WebController *GetInstance();
     SetOnAction(IrrigationController *controllerInstance, ValveActionFn action);
     SetOffAction(IrrigationController *controllerInstance, ValveActionFn action);
+    SetResetAction(IrrigationController *controllerInstance, ValveActionFn action);
 
 private:
     WiFiEspServer *server;
@@ -20,6 +21,7 @@ private:
     IrrigationController *actionController;
     ValveActionFn OnAction;
     ValveActionFn OffAction;
+    ValveActionFn ResetAction;
 };
 
 

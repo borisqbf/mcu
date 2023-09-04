@@ -20,6 +20,12 @@ WebController::SetOffAction(IrrigationController *controllerInstance, ValveActio
     OffAction = action;
 }
 
+WebController::SetResetAction(IrrigationController *controllerInstance, ValveActionFn action)
+{
+    actionController = controllerInstance;
+    ResetAction = action;
+}
+
 WebController::WebController()
 {
     server = new WiFiEspServer(80);
@@ -70,6 +76,13 @@ void WebController::ProcessMainLoop()
                         (actionController->*OffAction)();
                     }
                 }
+                else if (buf.endsWith("GET /RESET"))
+                {
+                    if (actionController != NULL && OffAction != NULL)
+                    {
+                        (actionController->*ResetAction)();
+                    }
+                }
             }
         }
 
@@ -88,13 +101,13 @@ void WebController::SendHttpResponse(WiFiEspClient client)
     client.println();
 
     // the content of the HTTP response follows the header:
-    client.print("OK. Current time is ");
-
+    client.print("Current time is ");
     char message[250];
     Chronos::DateTime n = Chronos::DateTime::now();
-    sprintf(message, "%02u/%02u/%u %02u:%02u.", n.day(), n.month(), n.year(), n.hour(), n.minute());
-
-    client.print(message);
+    sprintf(message, "%02u/%02u/%u %02u:%02u. ", n.day(), n.month(), n.year(), n.hour(), n.minute());
+    client.println(message);
+    client.print("Current state is ");
+    client.println(actionController->GetCurrentState());
     // The HTTP response ends with another blank line:
     client.println();
 }
