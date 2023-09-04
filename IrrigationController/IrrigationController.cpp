@@ -1,11 +1,10 @@
 #include "IrrigationController.h"
 #include <TimeLib.h>
 
-
-
 IrrigationController::IrrigationController(/* args */)
 {
-
+    digitalWrite(valveOpenPin, LOW);
+    digitalWrite(valveClosePin, LOW);
 }
 
 IrrigationController::~IrrigationController()
@@ -74,6 +73,8 @@ void IrrigationController::ValveOpen()
     Serial.println("The valve is open");
     currentState = State::Watering;
     stateChangedAt = Chronos::DateTime::now();
+    digitalWrite(valveOpenPin, LOW);
+    digitalWrite(valveClosePin, LOW);
 }
 
 void IrrigationController::ValveClosed()
@@ -81,6 +82,8 @@ void IrrigationController::ValveClosed()
     Serial.println("The valve is closed");
     currentState = State::Idle;
     stateChangedAt = Chronos::DateTime::now();
+    digitalWrite(valveOpenPin, LOW);
+    digitalWrite(valveClosePin, LOW);
 }
 
 bool IrrigationController::CheckStartTime()
@@ -116,6 +119,8 @@ void IrrigationController::CloseValve()
     Serial.println("The valve is closing");
     currentState = State::ClosingValve;
     stateChangedAt = Chronos::DateTime::now();
+    digitalWrite(valveOpenPin, LOW);
+    digitalWrite(valveClosePin, HIGH);
 }
 
 void IrrigationController::OpenValve()
@@ -123,4 +128,6 @@ void IrrigationController::OpenValve()
     Serial.println("The valve is opening");
     currentState = State::OpeningValve;
     stateChangedAt = Chronos::DateTime::now();
+    digitalWrite(valveOpenPin, HIGH);
+    digitalWrite(valveClosePin, LOW);
 }

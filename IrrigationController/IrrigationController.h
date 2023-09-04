@@ -13,6 +13,10 @@ enum State
     ClosingValve
 };
 
+
+#define valveOpenPin 4
+#define valveClosePin 5
+
 class IrrigationController
 {
 private:

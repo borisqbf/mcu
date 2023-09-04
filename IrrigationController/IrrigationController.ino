@@ -11,13 +11,16 @@ WebController *web = NULL;
 const byte interruptValveOpenPin = 2;
 const byte interruptValveClosedPin = 3;
 
-
 void setup()
 {
+  pinMode(valveOpenPin, OUTPUT);
+  pinMode(valveClosePin, OUTPUT);
+  pinMode(interruptValveOpenPin, INPUT_PULLUP);
+  pinMode(interruptValveClosedPin, INPUT_PULLUP);
   Serial.begin(115200);
   wifi = WiFiController::GetInstance();
   wifi->Setup();
-  
+
   controller = new IrrigationController();
   controller->Initialize();
 
@@ -25,12 +28,12 @@ void setup()
   web->Setup();
   web->SetOnAction(controller, &(controller->OpenValve));
   web->SetOffAction(controller, &(controller->CloseValve));
-  attachInterrupt(digitalPinToInterrupt(interruptValveOpenPin), ValveOpen, RISING);
-  attachInterrupt(digitalPinToInterrupt(interruptValveClosedPin), ValveClosed, RISING);
-
+  attachInterrupt(digitalPinToInterrupt(interruptValveOpenPin), ValveOpen, FALLING);
+  attachInterrupt(digitalPinToInterrupt(interruptValveClosedPin), ValveClosed, FALLING);
 }
 
-void loop() {
+void loop()
+{
   controller->ProcesMainLoop(); // put your main code here, to run repeatedly:
   web->ProcessMainLoop();
 }
