@@ -28,6 +28,7 @@ void setup()
   web->Setup();
   web->SetOnAction(controller, &(controller->OpenValve));
   web->SetOffAction(controller, &(controller->CloseValve));
+  web->SetResetAction(controller, &(controller->Reset));
   attachInterrupt(digitalPinToInterrupt(interruptValveOpenPin), ValveOpen, FALLING);
   attachInterrupt(digitalPinToInterrupt(interruptValveClosedPin), ValveClosed, FALLING);
 }
