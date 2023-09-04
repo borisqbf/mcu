@@ -1,11 +1,18 @@
 #include "WiFiController.h"
-#include "SoftwareSerial.h"
+#include <SoftwareSerial.h>
 #include <TimeLib.h>
+#include <Timezone.h>
+
 SoftwareSerial Serial1(6, 7); // RX, TX
 
 static WiFiController theInstance;
 byte packetBuffer[NTP_PACKET_SIZE];
 WiFiEspUDP Udp;
+// Australia Eastern Time Zone (Sydney, Melbourne)
+TimeChangeRule aEDT = {"AEDT", First, Sun, Oct, 2, 660}; // UTC + 11 hours
+TimeChangeRule aEST = {"AEST", First, Sun, Apr, 3, 600}; // UTC + 10 hours
+Timezone ausET(aEDT, aEST);
+
 
 WiFiController *WiFiController::GetInstance()
 {
@@ -63,9 +70,11 @@ time_t WiFiController::GetNTPTime()
         secsSince1900 |= (unsigned long)packetBuffer[41] << 16;
         secsSince1900 |= (unsigned long)packetBuffer[42] << 8;
         secsSince1900 |= (unsigned long)packetBuffer[43];
-        return secsSince1900 - 2208988800UL + timeZone * SECS_PER_HOUR;
+        const unsigned long seventyYears = 2208988800UL;
+        unsigned long epoch = secsSince1900 - seventyYears;
+        return ausET.toLocal(epoch);
     }
-    Serial.println("No NTP Response :-(");
+    Serial.println("No NTP Response");
     return 0; // return 0 if unable to get the time
 }
 
