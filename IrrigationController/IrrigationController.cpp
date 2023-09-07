@@ -79,7 +79,6 @@ void IrrigationController::ValveOpen()
 {
     if (currentState == State::OpeningValve)
     {
-        Serial.println("The valve is open");
         currentState = State::Watering;
         stateChangedAt = Chronos::DateTime::now();
         digitalWrite(valveOpenPin, LOW);
@@ -91,7 +90,6 @@ void IrrigationController::ValveClosed()
 {
     if (currentState == State::ClosingValve)
     {
-        Serial.println("The valve is closed");
         currentState = State::Idle;
         stateChangedAt = Chronos::DateTime::now();
         digitalWrite(valveOpenPin, LOW);
@@ -101,7 +99,6 @@ void IrrigationController::ValveClosed()
 
 void IrrigationController::Reset()
 {
-    Serial.println("Resetting");
     currentState = State::Idle;
 }
 
@@ -152,7 +149,6 @@ void IrrigationController::SetNextStartTime()
 
 void IrrigationController::CloseValve()
 {
-    Serial.println("The valve is closing");
     currentState = State::ClosingValve;
     stateChangedAt = Chronos::DateTime::now();
     digitalWrite(valveOpenPin, LOW);
@@ -161,7 +157,6 @@ void IrrigationController::CloseValve()
 
 void IrrigationController::OpenValve()
 {
-    Serial.println("The valve is opening");
     currentState = State::OpeningValve;
     stateChangedAt = Chronos::DateTime::now();
     digitalWrite(valveOpenPin, HIGH);
