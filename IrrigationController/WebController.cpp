@@ -11,19 +11,19 @@ WebController *WebController::GetInstance()
 WebController::SetOnAction(IrrigationController *controllerInstance, ValveActionFn action)
 {
     actionController = controllerInstance;
-    OnAction = action;
+    onAction = action;
 }
 
 WebController::SetOffAction(IrrigationController *controllerInstance, ValveActionFn action)
 {
     actionController = controllerInstance;
-    OffAction = action;
+    offAction = action;
 }
 
 WebController::SetResetAction(IrrigationController *controllerInstance, ValveActionFn action)
 {
     actionController = controllerInstance;
-    ResetAction = action;
+    resetAction = action;
 }
 
 WebController::WebController()
@@ -39,12 +39,13 @@ void WebController::Setup()
 
 void WebController::ProcessMainLoop()
 {
+    currentAction = NULL;
     WiFiEspClient client = server->available(); // listen for incoming clients
     if (client)
     {                                 // if you get a client,
         Serial.println("New client"); // print a message out the serial port
         buf.init();                   // initialize the circular buffer
-        ValveActionFn action = NULL;
+
         while (client.connected())
         { // loop while the client's connected
             if (client.available())
@@ -65,15 +66,15 @@ void WebController::ProcessMainLoop()
                 // Check to see if the client request was "GET /ON" or "GET /OFF":
                 if (buf.endsWith("GET /ON"))
                 {
-                    action = OnAction;
+                    currentAction = onAction;
                 }
                 else if (buf.endsWith("GET /OFF"))
                 {
-                    action = OffAction;
+                    currentAction = offAction;
                 }
                 else if (buf.endsWith("GET /RESET"))
                 {
-                    action = ResetAction;
+                    currentAction = resetAction;
                 }
             }
         }
@@ -82,9 +83,9 @@ void WebController::ProcessMainLoop()
         client.stop();
         Serial.println("Client disconnected");
 
-        if (actionController != NULL && OnAction != NULL)
+        if (actionController != NULL && currentAction != NULL)
         {
-            (actionController->*action)();
+            (actionController->*currentAction)();
         }
     }
 }
@@ -99,7 +100,7 @@ void WebController::SendHttpResponse(WiFiEspClient client)
 
     // the content of the HTTP response follows the header:
     client.print("Current time is ");
-    char message[150];
+    char message[50];
     Chronos::DateTime n = Chronos::DateTime::now();
     sprintf(message, "%02u/%02u/%u %02u:%02u. ", n.day(), n.month(), n.year(), n.hour(), n.minute());
     client.println(message);

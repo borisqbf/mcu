@@ -19,9 +19,10 @@ private:
     WiFiEspServer *server;
     void SendHttpResponse(WiFiEspClient client);
     IrrigationController *actionController;
-    ValveActionFn OnAction;
-    ValveActionFn OffAction;
-    ValveActionFn ResetAction;
+    ValveActionFn onAction;
+    ValveActionFn offAction;
+    ValveActionFn resetAction;
+    ValveActionFn currentAction;
 };
 
 
