@@ -40,12 +40,14 @@ private:
 public:
     IrrigationController(/* args */);
     ~IrrigationController();
+    static IrrigationController *GetInstance();
     void Initialize();
     void ProcesMainLoop();
     void ValveOpen();
     void ValveClosed();
     void Reset();
     char *GetCurrentState();
+    bool IsIdle() { return currentState == State::Idle; };
 };
 
 typedef void (IrrigationController::*ValveActionFn)(void);

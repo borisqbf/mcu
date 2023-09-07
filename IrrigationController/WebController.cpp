@@ -44,6 +44,7 @@ void WebController::ProcessMainLoop()
     {                                 // if you get a client,
         Serial.println("New client"); // print a message out the serial port
         buf.init();                   // initialize the circular buffer
+        ValveActionFn action = NULL;
         while (client.connected())
         { // loop while the client's connected
             if (client.available())
@@ -64,24 +65,15 @@ void WebController::ProcessMainLoop()
                 // Check to see if the client request was "GET /ON" or "GET /OFF":
                 if (buf.endsWith("GET /ON"))
                 {
-                    if (actionController != NULL && OnAction != NULL)
-                    {
-                        (actionController->*OnAction)();
-                    }
+                    action = OnAction;
                 }
                 else if (buf.endsWith("GET /OFF"))
                 {
-                    if (actionController != NULL && OffAction != NULL)
-                    {
-                        (actionController->*OffAction)();
-                    }
+                    action = OffAction;
                 }
                 else if (buf.endsWith("GET /RESET"))
                 {
-                    if (actionController != NULL && OffAction != NULL)
-                    {
-                        (actionController->*ResetAction)();
-                    }
+                    action = ResetAction;
                 }
             }
         }
@@ -89,6 +81,11 @@ void WebController::ProcessMainLoop()
         // close the connection
         client.stop();
         Serial.println("Client disconnected");
+
+        if (actionController != NULL && OnAction != NULL)
+        {
+            (actionController->*action)();
+        }
     }
 }
 
@@ -102,7 +99,7 @@ void WebController::SendHttpResponse(WiFiEspClient client)
 
     // the content of the HTTP response follows the header:
     client.print("Current time is ");
-    char message[250];
+    char message[150];
     Chronos::DateTime n = Chronos::DateTime::now();
     sprintf(message, "%02u/%02u/%u %02u:%02u. ", n.day(), n.month(), n.year(), n.hour(), n.minute());
     client.println(message);

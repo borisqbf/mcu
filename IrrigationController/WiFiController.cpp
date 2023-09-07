@@ -1,4 +1,5 @@
 #include "WiFiController.h"
+#include "IrrigationController.h"
 #include <SoftwareSerial.h>
 #include <TimeLib.h>
 #include <Timezone.h>
@@ -13,7 +14,6 @@ TimeChangeRule aEDT = {"AEDT", First, Sun, Oct, 2, 660}; // UTC + 11 hours
 TimeChangeRule aEST = {"AEST", First, Sun, Apr, 3, 600}; // UTC + 10 hours
 Timezone ausET(aEDT, aEST);
 
-
 WiFiController *WiFiController::GetInstance()
 {
     return &theInstance;
@@ -21,7 +21,6 @@ WiFiController *WiFiController::GetInstance()
 
 WiFiController::WiFiController()
 {
-
 }
 
 void WiFiController::Setup()
@@ -52,30 +51,35 @@ void WiFiController::Setup()
 
 time_t WiFiController::GetNTPTime()
 {
-    Serial.println("Transmit NTP Request");
-    SendNTPpacket(timeServer);
-    unsigned long startMs = millis();
-    while (!Udp.available() && (millis() - startMs) < UDP_TIMEOUT)
+    if (!IrrigationController::GetInstance()->IsIdle())
+        return 0;
+    else
     {
-    }
+        Serial.println("Transmit NTP Request");
+        SendNTPpacket(timeServer);
+        unsigned long startMs = millis();
+        while (!Udp.available() && (millis() - startMs) < UDP_TIMEOUT)
+        {
+        }
 
-    int size = Udp.parsePacket();
-    if (size >= NTP_PACKET_SIZE)
-    {
-        Serial.println("Receive NTP Response");
-        Udp.read(packetBuffer, NTP_PACKET_SIZE); // read packet into the buffer
-        unsigned long secsSince1900;
-        // convert four bytes starting at location 40 to a long integer
-        secsSince1900 = (unsigned long)packetBuffer[40] << 24;
-        secsSince1900 |= (unsigned long)packetBuffer[41] << 16;
-        secsSince1900 |= (unsigned long)packetBuffer[42] << 8;
-        secsSince1900 |= (unsigned long)packetBuffer[43];
-        const unsigned long seventyYears = 2208988800UL;
-        unsigned long epoch = secsSince1900 - seventyYears;
-        return ausET.toLocal(epoch);
+        int size = Udp.parsePacket();
+        if (size >= NTP_PACKET_SIZE)
+        {
+            Serial.println("Receive NTP Response");
+            Udp.read(packetBuffer, NTP_PACKET_SIZE); // read packet into the buffer
+            unsigned long secsSince1900;
+            // convert four bytes starting at location 40 to a long integer
+            secsSince1900 = (unsigned long)packetBuffer[40] << 24;
+            secsSince1900 |= (unsigned long)packetBuffer[41] << 16;
+            secsSince1900 |= (unsigned long)packetBuffer[42] << 8;
+            secsSince1900 |= (unsigned long)packetBuffer[43];
+            const unsigned long seventyYears = 2208988800UL;
+            unsigned long epoch = secsSince1900 - seventyYears;
+            return ausET.toLocal(epoch);
+        }
+        Serial.println("No NTP Response");
+        return 0; // return 0 if unable to get the time
     }
-    Serial.println("No NTP Response");
-    return 0; // return 0 if unable to get the time
 }
 
 void WiFiController::PrintWifiStatus()

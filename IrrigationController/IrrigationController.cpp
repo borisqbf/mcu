@@ -1,6 +1,13 @@
 #include "IrrigationController.h"
 #include <TimeLib.h>
 
+static IrrigationController theInstance;
+
+IrrigationController *IrrigationController::GetInstance()
+{
+    return &theInstance;
+}
+
 IrrigationController::IrrigationController(/* args */)
 {
     digitalWrite(valveOpenPin, LOW);
@@ -30,7 +37,7 @@ void IrrigationController::ProcesMainLoop()
     }
     else if (currentState == State::Watering)
     {
-        char message[250];
+        char message[150];
         if (CheckWateringTarget())
         {
             Chronos::DateTime n = Chronos::DateTime::now();

@@ -21,7 +21,7 @@ void setup()
   wifi = WiFiController::GetInstance();
   wifi->Setup();
 
-  controller = new IrrigationController();
+  controller = IrrigationController::GetInstance();
   controller->Initialize();
 
   web = WebController::GetInstance();
