@@ -20,5 +20,6 @@ IrrigationController/.vscode/c_cpp_properties.json
 IrrigationController/.vscode/c_cpp_properties.json
 WebAPIClient/obj/**
 WebAPIClient/bin/**
+WebAPIClient/.vs/**
 
 
