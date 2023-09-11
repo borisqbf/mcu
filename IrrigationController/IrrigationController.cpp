@@ -60,7 +60,7 @@ void IrrigationController::ProcesMainLoop()
         }
         if ((millis() - lastTimeVolumeMeasured) > 30000)
         {
-            float frequency = pulseCounter / (millis() - lastTimeVolumeMeasured);
+            float frequency = (pulseCounter * 1000.0) / (millis() - lastTimeVolumeMeasured);
             waterFlow = frequency / 5.5;
             pulseCounter = 0;
             waterVolume += (waterFlow * 2);
