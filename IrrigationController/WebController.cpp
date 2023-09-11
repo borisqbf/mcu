@@ -106,7 +106,7 @@ void WebController::SendHttpResponse(WiFiEspClient client)
     client.println(message);
     client.print("Current state is ");
     client.println(actionController->GetCurrentState());
-    client.print("Current flow is ");
+    client.print("<br>Current flow is ");
     client.println(actionController->GetWaterFlow());
 
     // The HTTP response ends with another blank line:

@@ -65,10 +65,11 @@ void IrrigationController::ProcesMainLoop()
             lastWaterVolume = currentWaterVolume;
             waterFlow = delta * 2;
         }
-        if (digitalRead(volumeMetterPin) == 1 && (lastStateOfvolumeMetterPin == 0))
+        if (digitalRead(volumeMetterPin) != lastStateOfvolumeMetterPin)
         {
-            lastStateOfvolumeMetterPin = 1;
-            currentWaterVolume+=(1.0/5.5);
+            lastStateOfvolumeMetterPin = digitalRead(volumeMetterPin);
+            if (lastStateOfvolumeMetterPin == HIGH)
+                currentWaterVolume += (1.0 / 5.5);
         }
 
     }
@@ -101,6 +102,7 @@ void IrrigationController::ValveOpen()
         currentWaterVolume = 0.0;
         lastTimeVolumeMeasured = millis();
         waterFlow = 0.0;
+        lastStateOfvolumeMetterPin = LOW;
     }
 }
 

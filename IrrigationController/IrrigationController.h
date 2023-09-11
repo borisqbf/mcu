@@ -16,7 +16,7 @@ enum State
 
 #define valveOpenPin 4
 #define valveClosePin 5
-#define volumeMetterPin 68
+#define volumeMetterPin 8
 
 class IrrigationController
 {
