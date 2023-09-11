@@ -26,11 +26,11 @@ private:
     Chronos::DateTime stateChangedAt;
     const int maxValveActionTime = 10;
     const int maxWateringTime = 60; // minutes
-    float lastWaterVolume = 0.0;
-    float currentWaterVolume = 0.0;
+    float waterVolume = 0.0;
     long lastTimeVolumeMeasured = 0;
     float waterVolumeTarget = 0.0;
     float waterFlow = 0.0;
+    long pulseCounter = 0;
     byte lastStateOfvolumeMetterPin = 0;
 
     bool CheckStartTime();
@@ -41,7 +41,8 @@ private:
     void SetNextStartTime();
     void CloseValve();
     void OpenValve();
- 
+    void InializeFlow();
+
 public:
     IrrigationController(/* args */);
     ~IrrigationController();
