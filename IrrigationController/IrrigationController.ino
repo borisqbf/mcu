@@ -17,6 +17,8 @@ void setup()
   pinMode(valveClosePin, OUTPUT);
   pinMode(interruptValveOpenPin, INPUT_PULLUP);
   pinMode(interruptValveClosedPin, INPUT_PULLUP);
+  pinMode(volumeMetterPin, INPUT_PULLUP);
+  
   Serial.begin(115200);
   wifi = WiFiController::GetInstance();
   wifi->Setup();

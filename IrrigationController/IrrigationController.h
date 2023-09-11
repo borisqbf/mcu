@@ -16,6 +16,7 @@ enum State
 
 #define valveOpenPin 4
 #define valveClosePin 5
+#define volumeMetterPin 68
 
 class IrrigationController
 {
@@ -25,8 +26,12 @@ private:
     Chronos::DateTime stateChangedAt;
     const int maxValveActionTime = 10;
     const int maxWateringTime = 60; // minutes
-    float waterVolume = 0.0;
+    float lastWaterVolume = 0.0;
+    float currentWaterVolume = 0.0;
+    long lastTimeVolumeMeasured = 0;
     float waterVolumeTarget = 0.0;
+    float waterFlow = 0.0;
+    byte lastStateOfvolumeMetterPin = 0;
 
     bool CheckStartTime();
     bool CheckEndTime();
@@ -46,6 +51,7 @@ public:
     void ValveOpen();
     void ValveClosed();
     void Reset();
+    float GetWaterFlow();
     char *GetCurrentState();
     bool IsIdle() { return currentState == State::Idle; };
 };

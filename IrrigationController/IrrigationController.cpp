@@ -21,6 +21,7 @@ IrrigationController::~IrrigationController()
 void IrrigationController::Initialize()
 {
     wifiController = WiFiController::GetInstance();
+    lastTimeVolumeMeasured = millis();
 }
 
 void IrrigationController::ProcesMainLoop()
@@ -29,7 +30,6 @@ void IrrigationController::ProcesMainLoop()
     {
         if (CheckStartTime())
         {
-            waterVolume = 0.0;
             SetEndTime();
             SetNextStartTime();
             OpenValve();
@@ -51,13 +51,26 @@ void IrrigationController::ProcesMainLoop()
         {
             Chronos::DateTime n = Chronos::DateTime::now();
             CloseValve();
-            sprintf(message, "Watering aborted at %02u/%02u/%u %02u:%02u after %u minutes. Watering target of %u  liters has not been reached. %u liters have been dispensed", n.day(), n.month(), n.year(), n.hour(), n.minute(), maxWateringTime, waterVolumeTarget, waterVolume);
+            sprintf(message, "Watering aborted at %02u/%02u/%u %02u:%02u after %u minutes. Watering target of %u  liters has not been reached. %u liters have been dispensed", n.day(), n.month(), n.year(), n.hour(), n.minute(), maxWateringTime, waterVolumeTarget, currentWaterVolume);
         }
         else
         {
             if (!CheckWaterFlow())
                 wifiController->Alert("Insufficient waterflow.");
         }
+        if ((millis() - lastTimeVolumeMeasured) > 30000)
+        {
+            lastTimeVolumeMeasured = millis();
+            float delta = currentWaterVolume - lastWaterVolume;
+            lastWaterVolume = currentWaterVolume;
+            waterFlow = delta * 2;
+        }
+        if (digitalRead(volumeMetterPin) == 1 && (lastStateOfvolumeMetterPin == 0))
+        {
+            lastStateOfvolumeMetterPin = 1;
+            currentWaterVolume+=(1.0/5.5);
+        }
+
     }
     else if (currentState == State::OpeningValve)
     {
@@ -83,6 +96,11 @@ void IrrigationController::ValveOpen()
         stateChangedAt = Chronos::DateTime::now();
         digitalWrite(valveOpenPin, LOW);
         digitalWrite(valveClosePin, LOW);
+
+        lastWaterVolume = 0.0;
+        currentWaterVolume = 0.0;
+        lastTimeVolumeMeasured = millis();
+        waterFlow = 0.0;
     }
 }
 
@@ -100,6 +118,11 @@ void IrrigationController::ValveClosed()
 void IrrigationController::Reset()
 {
     currentState = State::Idle;
+}
+
+float IrrigationController::GetWaterFlow()
+{
+    return waterFlow;
 }
 
 char *IrrigationController::GetCurrentState()

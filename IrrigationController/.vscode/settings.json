@@ -1,6 +1,12 @@
 {
     "files.associations": {
         "system_error": "cpp",
-        "ios": "cpp"
+        "ios": "cpp",
+        "initializer_list": "cpp",
+        "list": "cpp",
+        "vector": "cpp",
+        "xhash": "cpp",
+        "xstring": "cpp",
+        "xutility": "cpp"
     }
 }
