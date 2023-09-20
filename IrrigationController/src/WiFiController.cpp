@@ -1,10 +1,7 @@
+
 #include "WiFiController.h"
 #include "IrrigationController.h"
-#include <SoftwareSerial.h>
-#include <TimeLib.h>
-#include <Timezone.h>
 
-SoftwareSerial Serial1(6, 7); // RX, TX
 
 static WiFiController theInstance;
 byte packetBuffer[NTP_PACKET_SIZE];

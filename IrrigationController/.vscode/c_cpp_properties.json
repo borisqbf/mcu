@@ -8,7 +8,8 @@
             "intelliSenseMode": "windows-msvc-x64",
             "includePath": [
                 "${workspaceFolder}/**",
-                "C:/Users/Boris/Documents/Arduino/libraries/**"
+                "C:/Users/Boris/Documents/Arduino/libraries/**",
+                "C:/Users/Boris/.platformio/packages/**"
             ],
             "forcedInclude": [],
             "cStandard": "c17",

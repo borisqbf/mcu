@@ -1,7 +1,7 @@
 #ifndef WEBCONTROLLER_H
 #define WEBCONTROLLER_H
 
-#include <WiFiEsp.h>
+#include <WiFi.h>
 #include "IrrigationController.h"
 
 class WebController

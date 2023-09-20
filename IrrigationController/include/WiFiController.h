@@ -3,9 +3,12 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <WiFi.h>
+#include <ESPmDNS.h>
+#include <WiFiUdp.h>
 #include <time.h>
-#include <WiFiEsp.h>
-#include <WiFiEspUdp.h>
+#include <TimeLib.h>
+#include <Timezone.h>
 
 #define timeServer "time.google.com"
 #define UDP_TIMEOUT 2000
