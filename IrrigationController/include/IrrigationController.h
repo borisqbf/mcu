@@ -39,8 +39,6 @@ private:
     bool CheckWateringTarget();
     void SetEndTime();
     void SetNextStartTime();
-    void CloseValve();
-    void OpenValve();
     void InializeFlow();
 
 public:
@@ -51,10 +49,14 @@ public:
     void ProcesMainLoop();
     void ValveOpen();
     void ValveClosed();
-    void Reset();
+
     float GetWaterFlow();
-    char *GetCurrentState();
+    const char *GetCurrentState();
     bool IsIdle() { return currentState == State::Idle; };
+
+    void CloseValve();
+    void OpenValve();
+    void Reset();
 };
 
 typedef void (IrrigationController::*ValveActionFn)(void);

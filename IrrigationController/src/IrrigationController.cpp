@@ -45,14 +45,14 @@ void IrrigationController::ProcesMainLoop()
             Chronos::Span::Absolute duration = n - stateChangedAt;
             CloseValve();
 
-            sprintf(message, "Watering finished at %0u/%0u/%0u %0u:%0u.  Watering target of %u  liters has been reached. The process took %u minutes.", n.day(), n.month(), n.year(), n.hour(), n.minute(), waterVolumeTarget, duration.minutes());
+            sprintf(message, "Watering finished at %0u/%0u/%0u %0u:%0u.  Watering target of %u liters has been reached. The process took %u minutes.", n.day(), n.month(), n.year(), n.hour(), n.minute(), static_cast<int>(waterVolumeTarget), duration.minutes());
             wifiController->Alert(message);
         }
         else if (CheckEndTime())
         {
             Chronos::DateTime n = Chronos::DateTime::now();
             CloseValve();
-            sprintf(message, "Watering aborted at %02u/%02u/%u %02u:%02u after %u minutes. Watering target of %u  liters has not been reached. %u liters have been dispensed", n.day(), n.month(), n.year(), n.hour(), n.minute(), maxWateringTime, waterVolumeTarget, waterVolume);
+            sprintf(message, "Watering aborted at %02u/%02u/%u %02u:%02u after %u minutes. Watering target of %du liters has not been reached. %u liters have been dispensed", n.day(), n.month(), n.year(), n.hour(), n.minute(), maxWateringTime, static_cast<int>(waterVolumeTarget), static_cast<int>(waterVolume));
         }
         else
         {
@@ -127,7 +127,7 @@ float IrrigationController::GetWaterFlow()
     return waterFlow;
 }
 
-char *IrrigationController::GetCurrentState()
+const char *IrrigationController::GetCurrentState()
 {
     switch (currentState)
     {

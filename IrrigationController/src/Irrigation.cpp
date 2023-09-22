@@ -9,7 +9,17 @@ WebController *web = NULL;
 
 // Pins
 const byte interruptValveOpenPin = 2;
-const byte interruptValveClosedPin = 3;
+const byte interruptValveClosedPin = 4;
+
+void ValveOpen()
+{
+  controller->ValveOpen();
+}
+
+void ValveClosed()
+{
+  controller->ValveClosed();
+}
 
 void setup()
 {
@@ -28,9 +38,11 @@ void setup()
 
   web = WebController::GetInstance();
   web->Setup();
-  web->SetOnAction(controller, &(controller->OpenValve));
-  web->SetOffAction(controller, &(controller->CloseValve));
-  web->SetResetAction(controller, &(controller->Reset));
+
+  web->SetOnAction(controller, &IrrigationController::OpenValve);
+  web->SetOffAction(controller, &IrrigationController::CloseValve);
+  web->SetResetAction(controller, &IrrigationController::Reset);
+
   attachInterrupt(digitalPinToInterrupt(interruptValveOpenPin), ValveOpen, FALLING);
   attachInterrupt(digitalPinToInterrupt(interruptValveClosedPin), ValveClosed, FALLING);
 }
@@ -39,14 +51,4 @@ void loop()
 {
   controller->ProcesMainLoop(); // put your main code here, to run repeatedly:
   web->ProcessMainLoop();
-}
-
-void ValveOpen()
-{
-  controller->ValveOpen();
-}
-
-void ValveClosed()
-{
-  controller->ValveClosed();
 }

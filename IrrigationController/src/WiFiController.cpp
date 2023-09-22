@@ -5,7 +5,7 @@
 
 static WiFiController theInstance;
 byte packetBuffer[NTP_PACKET_SIZE];
-WiFiEspUDP Udp;
+WiFiUDP Udp;
 // Australia Eastern Time Zone (Sydney, Melbourne)
 TimeChangeRule aEDT = {"AEDT", First, Sun, Oct, 2, 660}; // UTC + 11 hours
 TimeChangeRule aEST = {"AEST", First, Sun, Apr, 3, 600}; // UTC + 10 hours
@@ -22,16 +22,8 @@ WiFiController::WiFiController()
 
 void WiFiController::Setup()
 {
-    Serial1.begin(9600);
-    WiFi.init(&Serial1);
-
-    if (WiFi.status() == WL_NO_SHIELD)
-    {
-        Serial.println("WiFi shield not present");
-        // don't continue
-        return;
-    }
-    // attempt to connect to WiFi network
+    WiFi.mode(WIFI_STA);
+    
     while (status != WL_CONNECTED)
     {
         status = WiFi.begin(ssid, pass);

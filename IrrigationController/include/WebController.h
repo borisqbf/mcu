@@ -1,7 +1,7 @@
 #ifndef WEBCONTROLLER_H
 #define WEBCONTROLLER_H
 
-#include <WiFi.h>
+#include <WebServer.h>
 #include "IrrigationController.h"
 
 class WebController
@@ -11,19 +11,18 @@ public:
     void Setup();
     void ProcessMainLoop();
     static WebController *GetInstance();
-    SetOnAction(IrrigationController *controllerInstance, ValveActionFn action);
-    SetOffAction(IrrigationController *controllerInstance, ValveActionFn action);
-    SetResetAction(IrrigationController *controllerInstance, ValveActionFn action);
+    void SetOnAction(IrrigationController *controllerInstance, ValveActionFn action);
+    void SetOffAction(IrrigationController *controllerInstance, ValveActionFn action);
+    void SetResetAction(IrrigationController *controllerInstance, ValveActionFn action);
 
 private:
-    WiFiEspServer *server;
-    void SendHttpResponse(WiFiEspClient client);
+    WebServer *server;
+    void SendHttpResponse(WiFiClient client);
     IrrigationController *actionController;
     ValveActionFn onAction;
     ValveActionFn offAction;
     ValveActionFn resetAction;
     ValveActionFn currentAction;
 };
-
 
 #endif
