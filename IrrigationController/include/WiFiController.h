@@ -4,7 +4,6 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <WiFi.h>
-#include <ESPmDNS.h>
 #include <WiFiUdp.h>
 #include <ESP_Mail_Client.h>
 #include <TimeLib.h>
@@ -21,7 +20,6 @@ public:
     void Setup();
     static WiFiController *GetInstance();
     WiFiController();
-    void Alert(const char *message);
 
 private:
     WiFiClient client;

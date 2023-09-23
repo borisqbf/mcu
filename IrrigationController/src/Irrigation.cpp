@@ -1,6 +1,6 @@
 #include "WiFiController.h"
-#include "IrrigationController.h"
 #include "WebController.h"
+#include "IrrigationController.h"
 
 // Controllers
 IrrigationController *controller = NULL;
@@ -28,20 +28,17 @@ void setup()
   pinMode(interruptValveOpenPin, INPUT_PULLUP);
   pinMode(interruptValveClosedPin, INPUT_PULLUP);
   pinMode(volumeMetterPin, INPUT_PULLUP);
-  
+
   Serial.begin(115200);
   wifi = WiFiController::GetInstance();
   wifi->Setup();
 
   controller = IrrigationController::GetInstance();
-  controller->Initialize();
+  controller->Setup();
 
   web = WebController::GetInstance();
-  web->Setup();
 
-  web->SetOnAction(controller, &IrrigationController::OpenValve);
-  web->SetOffAction(controller, &IrrigationController::CloseValve);
-  web->SetResetAction(controller, &IrrigationController::Reset);
+  web->Setup();
 
   attachInterrupt(digitalPinToInterrupt(interruptValveOpenPin), ValveOpen, FALLING);
   attachInterrupt(digitalPinToInterrupt(interruptValveClosedPin), ValveClosed, FALLING);

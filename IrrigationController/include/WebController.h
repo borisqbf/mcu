@@ -2,27 +2,32 @@
 #define WEBCONTROLLER_H
 
 #include <WebServer.h>
-#include "IrrigationController.h"
+
+#define MAX_ROUTES 20
 
 class WebController
 {
+    struct Route
+    {
+        const char *url;
+        WebServer::THandlerFunction handler;
+    };
+
 public:
     WebController();
     void Setup();
     void ProcessMainLoop();
+    void Alert(const char *message);
     static WebController *GetInstance();
-    void SetOnAction(IrrigationController *controllerInstance, ValveActionFn action);
-    void SetOffAction(IrrigationController *controllerInstance, ValveActionFn action);
-    void SetResetAction(IrrigationController *controllerInstance, ValveActionFn action);
+    static void AddAction(const char* url, WebServer::THandlerFunction action);
+    void SendHttpResponse(const char *message);
 
 private:
     WebServer *server;
-    void SendHttpResponse(WiFiClient client);
-    IrrigationController *actionController;
-    ValveActionFn onAction;
-    ValveActionFn offAction;
-    ValveActionFn resetAction;
-    ValveActionFn currentAction;
+    static void HandleRoot();
+    static void HandleNotFound();
+    static Route routes[MAX_ROUTES];
+    static int nextRouteIndex; // one for root
 };
 
 #endif

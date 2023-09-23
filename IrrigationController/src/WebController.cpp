@@ -1,45 +1,46 @@
+#include <ESPmDNS.h>
 #include "WebController.h"
 
 static WebController theInstance;
 
-const char *absLevelURL = "/api/level-abs";
-
-void HandleRoot()
+void WebController::HandleRoot()
 {
     String message = "Hello resolved by mDNS!\n\n";
-    message += "Available routes are ";
-    message += absLevelURL;
-    message += " and ";
-    message += absLevelURL;
+    message += "\nAvailable routes are:\n";
+    for (int i = 0; i < MAX_ROUTES; i++)
+    {
+        if (routes[i].url == NULL)
+            break;
+        message += routes[i].url;
+        message += "\n";
+    }
 
-    server->send(200, "text/plain", message);
+    theInstance.server->send(200, "text/plain", message);
 }
 
-void HandleNotFound()
+void WebController::HandleNotFound()
 {
     String message = "File Not Found\n\n";
     message += "URI: ";
-    message += server->uri();
+    message += theInstance.server->uri();
     message += "\nMethod: ";
-    message += (server->method() == HTTP_GET) ? "GET" : "POST";
+    message += (theInstance.server->method() == HTTP_GET) ? "GET" : "POST";
     message += "\nArguments: ";
-    message += server->args();
+    message += theInstance.server->args();
     message += "\n";
-    for (uint8_t i = 0; i < server->args(); i++)
+    for (uint8_t i = 0; i < theInstance.server->args(); i++)
     {
-        message += " " + server->argName(i) + ": " + server->arg(i) + "\n";
+        message += " " + theInstance.server->argName(i) + ": " + theInstance.server->arg(i) + "\n";
     }
-    message += "\nAvailable routes are ";
-    message += absLevelURL;
-    message += " and ";
-    message += absLevelURL;
-
-    server->send(404, "text/plain", message);
-}
-
-void GetLevelPercentage()
-{
-    server->send(200, "text/plain", String(waterLevelPercentage, 2).c_str());
+    message += "\nAvailable routes are:\n";
+    for (int i = 0; i < MAX_ROUTES; i++)
+    {
+        if (routes[i].url == NULL)
+            break;
+        message += routes[i].url;
+        message += "\n";
+    }
+    theInstance.server->send(404, "text/plain", message);
 }
 
 WebController *WebController::GetInstance()
@@ -47,39 +48,35 @@ WebController *WebController::GetInstance()
     return &theInstance;
 }
 
-void WebController::SetOnAction(IrrigationController *controllerInstance, ValveActionFn action)
+void WebController::AddAction(const char *url, WebServer::THandlerFunction action)
 {
-    actionController = controllerInstance;
-    onAction = action;
-}
-
-void WebController::SetOffAction(IrrigationController *controllerInstance, ValveActionFn action)
-{
-    actionController = controllerInstance;
-    offAction = action;
-}
-
-void WebController::SetResetAction(IrrigationController *controllerInstance, ValveActionFn action)
-{
-    actionController = controllerInstance;
-    resetAction = action;
+    if (nextRouteIndex < MAX_ROUTES)
+        WebController::routes[nextRouteIndex++] = {url, action};
+    else
+        Serial.println("No more route slots available");
 }
 
 WebController::WebController()
 {
     server = new WebServer(80);
+    nextRouteIndex = 1;
 }
 
 void WebController::Setup()
 {
-    if (MDNS.begin("rain-tank-level"))
+    if (MDNS.begin("irrigation-controller"))
     { // Start mDNS
 
         Serial.println("MDNS started");
     }
+    routes[0] = {"/", &WebController::HandleRoot};
+    for (int i = 0; i < MAX_ROUTES; i++)
+    {
+        if (routes[i].url == NULL)
+            break;
+        server->on(routes[i].url, routes[i].handler);
+    }
 
-    server->on("/", HandleRoot);                // Associate handler function to path
-    server->on(absLevelURL, GetLevelAbsolute);  // Associate handler function to path
     server->onNotFound(HandleNotFound);
 
     server->begin(); // Start server
@@ -89,29 +86,16 @@ void WebController::Setup()
 void WebController::ProcessMainLoop()
 {
     server->handleClient();
-    MDNS.update();
 }
 
-void WebController::SendHttpResponse(WiFiClient client)
+void WebController::SendHttpResponse(const char *message)
 {
     // HTTP headers always start with a response code (e.g. HTTP/1.1 200 OK)
     // and a content-type so the client knows what's coming, then a blank line:
-    client.println("HTTP/1.1 200 OK");
-    client.println("Content-type:text/html");
-    client.println();
 
-    // the content of the HTTP response follows the header:
-    client.print("Current time is ");
-    char message[50];
-    Chronos::DateTime n = Chronos::DateTime::now();
-    sprintf(message, "%02u/%02u/%u %02u:%02u. ", n.day(), n.month(), n.year(), n.hour(), n.minute());
-    client.println(message);
-    client.print("Current state is ");
-    client.println(actionController->GetCurrentState());
-    client.print("<br>Current flow is ");
-    client.println(actionController->GetWaterFlow());
+    server->send(200, "text/plain", message);
+}
 
-    // The HTTP response ends with another blank line:
-
-    client.println();
+void WebController::Alert(const char *message)
+{
 }

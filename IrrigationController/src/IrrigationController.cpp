@@ -1,7 +1,6 @@
 
 #include "IrrigationController.h"
 
-
 static IrrigationController theInstance;
 
 IrrigationController *IrrigationController::GetInstance()
@@ -19,10 +18,14 @@ IrrigationController::~IrrigationController()
 {
 }
 
-void IrrigationController::Initialize()
+void IrrigationController::Setup()
 {
-    wifiController = WiFiController::GetInstance();
+    webController = WebController::GetInstance();
     lastTimeVolumeMeasured = millis();
+
+    WebController::AddAction("/on", &IrrigationController::OpenValve);
+    WebController::AddAction("/off", &IrrigationController::CloseValve);
+    WebController::AddAction("/reset", &IrrigationController::Reset);
 }
 
 void IrrigationController::ProcesMainLoop()
@@ -38,26 +41,27 @@ void IrrigationController::ProcesMainLoop()
     }
     else if (currentState == State::Watering)
     {
-        char message[150];
+        static char message[150];
         if (CheckWateringTarget())
         {
             Chronos::DateTime n = Chronos::DateTime::now();
             Chronos::Span::Absolute duration = n - stateChangedAt;
             CloseValve();
 
-            sprintf(message, "Watering finished at %0u/%0u/%0u %0u:%0u.  Watering target of %u liters has been reached. The process took %u minutes.", n.day(), n.month(), n.year(), n.hour(), n.minute(), static_cast<int>(waterVolumeTarget), duration.minutes());
-            wifiController->Alert(message);
+            snprintf(message, 150, "Watering finished at %0u/%0u/%0u %0u:%0u.  Watering target of %u liters has been reached. The process took %u minutes.", n.day(), n.month(), n.year(), n.hour(), n.minute(), static_cast<int>(waterVolumeTarget), duration.minutes());
+            webController->Alert(message);
         }
         else if (CheckEndTime())
         {
             Chronos::DateTime n = Chronos::DateTime::now();
             CloseValve();
-            sprintf(message, "Watering aborted at %02u/%02u/%u %02u:%02u after %u minutes. Watering target of %du liters has not been reached. %u liters have been dispensed", n.day(), n.month(), n.year(), n.hour(), n.minute(), maxWateringTime, static_cast<int>(waterVolumeTarget), static_cast<int>(waterVolume));
+            snprintf(message, 150, "Watering aborted at %02u/%02u/%u %02u:%02u after %u minutes. Watering target of %du liters has not been reached. %u liters have been dispensed", n.day(), n.month(), n.year(), n.hour(), n.minute(), maxWateringTime, static_cast<int>(waterVolumeTarget), static_cast<int>(waterVolume));
+            webController->Alert(message);
         }
         else
         {
             if (!CheckWaterFlow())
-                wifiController->Alert("Insufficient waterflow.");
+                webController->Alert("Insufficient waterflow.");
         }
         if ((millis() - lastTimeVolumeMeasured) > 30000)
         {
@@ -75,20 +79,19 @@ void IrrigationController::ProcesMainLoop()
                 pulseCounter++;
             }
         }
-
     }
     else if (currentState == State::OpeningValve)
     {
         if ((Chronos::DateTime::now() - stateChangedAt) > Chronos::Span::Seconds(maxValveActionTime))
         {
-            wifiController->Alert("Unable to open Valve.");
+            webController->Alert("Unable to open Valve.");
         }
     }
     else if (currentState == State::ClosingValve)
     {
         if ((Chronos::DateTime::now() - stateChangedAt) > Chronos::Span::Seconds(maxValveActionTime))
         {
-            wifiController->Alert("Unable to close Valve");
+            webController->Alert("Unable to close Valve");
         }
     }
 }
@@ -118,8 +121,8 @@ void IrrigationController::ValveClosed()
 
 void IrrigationController::Reset()
 {
-    currentState = State::Idle;
-    InializeFlow();
+    theInstance.currentState = State::Idle;
+    theInstance.InializeFlow();
 }
 
 float IrrigationController::GetWaterFlow()
@@ -172,18 +175,28 @@ void IrrigationController::SetNextStartTime()
 {
 }
 
+const char *IrrigationController::GenerateStatusResponse()
+{
+    static char message[250];
+    Chronos::DateTime n = Chronos::DateTime::now();
+    snprintf(message, 250, "Current time is %02u/%02u/%u %02u:%02u.\nCurrent state is %s\nCurrent flow is %d\n", n.day(), n.month(), n.year(), n.hour(), n.minute(), GetCurrentState(), static_cast<int>(GetWaterFlow()));
+    return message;
+}
+
 void IrrigationController::CloseValve()
 {
-    currentState = State::ClosingValve;
-    stateChangedAt = Chronos::DateTime::now();
+    theInstance.currentState = State::ClosingValve;
+    theInstance.stateChangedAt = Chronos::DateTime::now();
     digitalWrite(valveOpenPin, LOW);
     digitalWrite(valveClosePin, HIGH);
+
+    theInstance.webController->SendHttpResponse(theInstance.GenerateStatusResponse());
 }
 
 void IrrigationController::OpenValve()
 {
-    currentState = State::OpeningValve;
-    stateChangedAt = Chronos::DateTime::now();
+    theInstance.currentState = State::OpeningValve;
+    theInstance.stateChangedAt = Chronos::DateTime::now();
     digitalWrite(valveOpenPin, HIGH);
     digitalWrite(valveClosePin, LOW);
 }

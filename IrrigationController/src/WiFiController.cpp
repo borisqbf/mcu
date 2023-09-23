@@ -82,9 +82,7 @@ void WiFiController::PrintWifiStatus()
     Serial.print("IP Address: ");
     Serial.println(ip);
 }
-void WiFiController::Alert(const char *message)
-{
-}
+
 
 void WiFiController::SendNTPpacket(const char *ntpSrv)
 {

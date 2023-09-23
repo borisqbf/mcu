@@ -3,7 +3,7 @@
 
 #include <TimeLib.h>
 #include <Chronos.h>
-#include "WiFiController.h"
+#include "WebController.h"
 
 enum State
 {
@@ -13,7 +13,6 @@ enum State
     ClosingValve
 };
 
-
 #define valveOpenPin 4
 #define valveClosePin 5
 #define volumeMetterPin 8
@@ -21,7 +20,7 @@ enum State
 class IrrigationController
 {
 private:
-    WiFiController *wifiController = NULL;
+    WebController *webController = NULL;
     enum State currentState = State::Idle;
     Chronos::DateTime stateChangedAt;
     const int maxValveActionTime = 10;
@@ -41,11 +40,12 @@ private:
     void SetNextStartTime();
     void InializeFlow();
 
+
 public:
     IrrigationController(/* args */);
     ~IrrigationController();
     static IrrigationController *GetInstance();
-    void Initialize();
+    void Setup();
     void ProcesMainLoop();
     void ValveOpen();
     void ValveClosed();
@@ -54,11 +54,11 @@ public:
     const char *GetCurrentState();
     bool IsIdle() { return currentState == State::Idle; };
 
-    void CloseValve();
-    void OpenValve();
-    void Reset();
-};
+    const char *GenerateStatusResponse();
 
-typedef void (IrrigationController::*ValveActionFn)(void);
+    static void CloseValve();
+    static void OpenValve();
+    static void Reset();
+};
 
 #endif
