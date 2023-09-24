@@ -3,10 +3,11 @@
 
 #include <WebServer.h>
 
-#define MAX_ROUTES 20
+#define MAX_ROUTES 10
 
 class WebController
 {
+    public:
     struct Route
     {
         const char *url;
@@ -26,8 +27,6 @@ private:
     WebServer *server;
     static void HandleRoot();
     static void HandleNotFound();
-    static Route routes[MAX_ROUTES];
-    static int nextRouteIndex; // one for root
 };
 
 #endif

@@ -3,6 +3,9 @@
 
 static WebController theInstance;
 
+static WebController::Route routes[MAX_ROUTES];
+static int nextRouteIndex; // one for root
+
 void WebController::HandleRoot()
 {
     String message = "Hello resolved by mDNS!\n\n";
@@ -51,7 +54,7 @@ WebController *WebController::GetInstance()
 void WebController::AddAction(const char *url, WebServer::THandlerFunction action)
 {
     if (nextRouteIndex < MAX_ROUTES)
-        WebController::routes[nextRouteIndex++] = {url, action};
+        routes[nextRouteIndex++] = {url, action};
     else
         Serial.println("No more route slots available");
 }
