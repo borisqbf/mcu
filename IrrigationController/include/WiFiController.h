@@ -26,7 +26,6 @@ private:
     // WI-FI settings
     const char *ssid = "QBF";
     const char *pass = "!QbfReward00";
-    int status = WL_IDLE_STATUS; // the Wifi radio's status
 
     unsigned int localPort = 2390; // local port to listen for UDP packets
 

@@ -23,17 +23,16 @@ WiFiController::WiFiController()
 void WiFiController::Setup()
 {
     WiFi.mode(WIFI_STA);
-    
-    while (status != WL_CONNECTED)
+    WiFi.begin(ssid, pass);
+    while (WiFi.status() != WL_CONNECTED)
     {
-        status = WiFi.begin(ssid, pass);
         // Connect to WPA/WPA2 network
-        delay(500);
+        delay(1000);
         Serial.print(".");
     }
-    Serial.println("You're connected to the network");
-    Udp.begin(localPort);
     PrintWifiStatus();
+    Udp.begin(localPort);
+
     setSyncProvider(GetNTPTime);
     setSyncInterval(SECS_PER_HOUR); // every hour
 }

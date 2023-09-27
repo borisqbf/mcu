@@ -1,4 +1,5 @@
 #include <ESPmDNS.h>
+#include <Chronos.h>
 #include "WebController.h"
 
 static WebController theInstance;
@@ -23,7 +24,7 @@ void WebController::HandleRoot()
 
 void WebController::HandleNotFound()
 {
-    String message = "File Not Found\n\n";
+    String message = "Rote Not Found\n\n";
     message += "URI: ";
     message += theInstance.server->uri();
     message += "\nMethod: ";
@@ -43,6 +44,22 @@ void WebController::HandleNotFound()
         message += routes[i].url;
         message += "\n";
     }
+
+    Chronos::DateTime n = Chronos::DateTime::now();
+    message += "Current time is ";
+    message += n.day();
+    message += "/";
+    message += n.month();
+    message += "/";
+    message += n.year();
+    message += " ";
+    message += n.hour();
+    message += ":";
+    if (n.minute() < 10)
+        message += "0";
+    message += n.minute();
+    message += "\n";
+
     theInstance.server->send(404, "text/plain", message);
 }
 
@@ -89,6 +106,7 @@ void WebController::Setup()
 void WebController::ProcessMainLoop()
 {
     server->handleClient();
+    delay(2);//allow the cpu to switch to other tasks
 }
 
 void WebController::SendHttpResponse(const char *message)

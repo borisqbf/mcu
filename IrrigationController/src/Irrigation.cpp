@@ -14,8 +14,8 @@ WiFiController *wifi = NULL;
 WebController *web = NULL;
 
 // Pins
-const byte interruptValveOpenPin = 2;
-const byte interruptValveClosedPin = 4;
+const byte interruptValveOpenPin = 22;
+const byte interruptValveClosedPin = 23;
 
 void ValveOpen()
 {
@@ -26,6 +26,7 @@ void ValveClosed()
 {
   controller->ValveClosed();
 }
+
 
 #if !CONFIG_AUTOSTART_ARDUINO
 void arduinoTask(void *pvParameter)
@@ -69,15 +70,20 @@ extern "C" void app_main()
 }
 #else
 
+
 void setup()
 {
+
   pinMode(valveOpenPin, OUTPUT);
   pinMode(valveClosePin, OUTPUT);
+
   pinMode(interruptValveOpenPin, INPUT_PULLUP);
   pinMode(interruptValveClosedPin, INPUT_PULLUP);
+
   pinMode(volumeMetterPin, INPUT_PULLUP);
 
   Serial.begin(115200);
+  delay (500);
   wifi = WiFiController::GetInstance();
   wifi->Setup();
 
@@ -90,11 +96,12 @@ void setup()
 
   attachInterrupt(digitalPinToInterrupt(interruptValveOpenPin), ValveOpen, FALLING);
   attachInterrupt(digitalPinToInterrupt(interruptValveClosedPin), ValveClosed, FALLING);
+
 }
 
 void loop()
 {
-  controller->ProcesMainLoop(); // put your main code here, to run repeatedly:
-  web->ProcessMainLoop();
+    controller->ProcesMainLoop(); // put your main code here, to run repeatedly:
+    web->ProcessMainLoop();
 }
 #endif
