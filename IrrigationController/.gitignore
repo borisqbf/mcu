@@ -1,7 +1,9 @@
-.pio
 .vscode
 managed_components
 dependencies.lock
 sdkconfig.esp32dev
-
-
+.pio/build/**
+.pio/libdeps/esp32dev/ESP Mail Client
+.pio/libdeps/esp32dev/Time
+.pio/libdeps/esp32dev/Timezone
+.pio/libdeps/esp32dev/integrity.dat
