@@ -96,7 +96,7 @@ void setup()
 
   attachInterrupt(digitalPinToInterrupt(interruptValveOpenPin), ValveOpen, FALLING);
   attachInterrupt(digitalPinToInterrupt(interruptValveClosedPin), ValveClosed, FALLING);
-
+  web->Alert("Irrigation controller has started.");
 }
 
 void loop()

@@ -100,6 +100,7 @@ void IrrigationController::ValveOpen()
 {
     if (currentState == State::OpeningValve)
     {
+        webController->Alert("Watering has started.");
         currentState = State::Watering;
         stateChangedAt = Chronos::DateTime::now();
         digitalWrite(valveOpenPin, LOW);
@@ -179,7 +180,7 @@ const char *IrrigationController::GenerateStatusResponse()
 {
     static char message[250];
     Chronos::DateTime n = Chronos::DateTime::now();
-    snprintf(message, 250, "Current time is %02u/%02u/%u %02u:%02u.\nCurrent state is %s\nCurrent flow is %d\n", n.day(), n.month(), n.year(), n.hour(), n.minute(), GetCurrentState(), static_cast<int>(GetWaterFlow()));
+    snprintf(message, 250, "Current time is %02u/%02u/%u %02u:%02u\nCurrent state is %s\nCurrent flow is %d\n", n.day(), n.month(), n.year(), n.hour(), n.minute(), GetCurrentState(), static_cast<int>(GetWaterFlow()));
     Serial.println(message);
     return message;
 }

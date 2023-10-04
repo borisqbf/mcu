@@ -5,7 +5,6 @@
 #include <stddef.h>
 #include <WiFi.h>
 #include <WiFiUdp.h>
-#include <ESP_Mail_Client.h>
 #include <TimeLib.h>
 #include <Timezone.h>
 
