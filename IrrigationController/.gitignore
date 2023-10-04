@@ -1,6 +1,7 @@
 .vscode
 dependencies.lock
 sdkconfig.esp32dev
+managed_components
 .pio/build/**
 .pio/libdeps/esp32dev/ESP Mail Client
 .pio/libdeps/esp32dev/Time
