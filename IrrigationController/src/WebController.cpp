@@ -7,7 +7,7 @@ WebController* WebController::theInstance = NULL;
 WebController::Route WebController::routes[MAX_ROUTES];
 Session_Config WebController::config;
 SMTPSession WebController::smtp;
-int WebController::nextRouteIndex; // one for root
+int WebController::nextRouteIndex = 1; // one for root
 WebServer *WebController::server = NULL;
 
 void WebController::HandleRoot()
@@ -64,6 +64,70 @@ void WebController::HandleNotFound()
     message += "\n";
 
     server->send(404, "text/plain", message);
+}
+
+WebController *WebController::GetInstance()
+{
+    if (theInstance == NULL)
+    {
+        theInstance = new WebController();
+
+        // returning the instance pointer
+        return theInstance;
+    }
+    else
+    {
+        return theInstance;
+    }
+}
+
+void WebController::AddAction(const char *url, WebServer::THandlerFunction action)
+{
+    if (nextRouteIndex < MAX_ROUTES)
+        routes[nextRouteIndex++] = {url, action};
+    else
+        Serial.println("No more route slots available");
+}
+
+WebController::WebController()
+{
+    server = new WebServer(80);
+}
+
+void WebController::Setup()
+{
+    if (MDNS.begin("irrigation-controller"))
+    { // Start mDNS
+
+        Serial.println("MDNS started");
+    }
+    routes[0] = {"/", &WebController::HandleRoot};
+    for (int i = 0; i < MAX_ROUTES; i++)
+    {
+        if (routes[i].url == NULL)
+            break;
+        server->on(routes[i].url, routes[i].handler);
+    }
+
+    server->onNotFound(HandleNotFound);
+
+    server->begin(); // Start server
+    Serial.println("HTTP server started");
+    InitMailClient();
+}
+
+void WebController::ProcessMainLoop()
+{
+    server->handleClient();
+    delay(2); // allow the cpu to switch to other tasks
+}
+
+void WebController::SendHttpResponse(const char *message)
+{
+    // HTTP headers always start with a response code (e.g. HTTP/1.1 200 OK)
+    // and a content-type so the client knows what's coming, then a blank line:
+
+    server->send(200, "text/plain", message);
 }
 
 void WebController::InitMailClient()
@@ -131,71 +195,6 @@ void WebController::SmtpCallback(SMTP_Status status)
         // You need to clear sending result as the memory usage will grow up.
         smtp.sendingResult.clear();
     }
-}
-
-WebController *WebController::GetInstance()
-{
-    if (theInstance == NULL)
-    {
-        theInstance = new WebController();
-
-        // returning the instance pointer
-        return theInstance;
-    }
-    else
-    {
-        return theInstance;
-    }
-}
-
-void WebController::AddAction(const char *url, WebServer::THandlerFunction action)
-{
-    if (nextRouteIndex < MAX_ROUTES)
-        routes[nextRouteIndex++] = {url, action};
-    else
-        Serial.println("No more route slots available");
-}
-
-WebController::WebController()
-{
-    server = new WebServer(80);
-    nextRouteIndex = 1;
-}
-
-void WebController::Setup()
-{
-    if (MDNS.begin("irrigation-controller"))
-    { // Start mDNS
-
-        Serial.println("MDNS started");
-    }
-    routes[0] = {"/", &WebController::HandleRoot};
-    for (int i = 0; i < MAX_ROUTES; i++)
-    {
-        if (routes[i].url == NULL)
-            break;
-        server->on(routes[i].url, routes[i].handler);
-    }
-
-    server->onNotFound(HandleNotFound);
-
-    server->begin(); // Start server
-    Serial.println("HTTP server started");
-    InitMailClient();
-}
-
-void WebController::ProcessMainLoop()
-{
-    server->handleClient();
-    delay(2); // allow the cpu to switch to other tasks
-}
-
-void WebController::SendHttpResponse(const char *message)
-{
-    // HTTP headers always start with a response code (e.g. HTTP/1.1 200 OK)
-    // and a content-type so the client knows what's coming, then a blank line:
-
-    server->send(200, "text/plain", message);
 }
 
 void WebController::Alert(const char *alert)

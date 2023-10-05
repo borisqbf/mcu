@@ -20,17 +20,19 @@ enum State
 class IrrigationController
 {
 private:
-    WebController *webController = NULL;
-    enum State currentState = State::Idle;
-    Chronos::DateTime stateChangedAt;
+    static WebController *webController;
+    static enum State currentState;
+    static Chronos::DateTime stateChangedAt;
     const int maxValveActionTime = 10;
     const int maxWateringTime = 60; // minutes
-    float waterVolume = 0.0;
-    long lastTimeVolumeMeasured = 0;
-    float waterVolumeTarget = 0.0;
-    float waterFlow = 0.0;
-    long pulseCounter = 0;
-    byte lastStateOfvolumeMetterPin = 0;
+    static float waterVolume;
+    static long lastTimeVolumeMeasured;
+    static float waterVolumeTarget;
+    static float waterFlow;
+    static long pulseCounter;
+
+    static byte lastStateOfvolumeMetterPin;
+    static IrrigationController *theInstance;
 
     bool CheckStartTime();
     bool CheckEndTime();
@@ -38,23 +40,22 @@ private:
     bool CheckWateringTarget();
     void SetEndTime();
     void SetNextStartTime();
-    void InializeFlow();
+    static void InializeFlow();
 
 
 public:
     IrrigationController(/* args */);
-    ~IrrigationController();
     static IrrigationController *GetInstance();
     void Setup();
     void ProcesMainLoop();
     void ValveOpen();
     void ValveClosed();
 
-    float GetWaterFlow();
-    const char *GetCurrentState();
+    static float GetWaterFlow();
+    static const char *GetCurrentState();
     bool IsIdle() { return currentState == State::Idle; };
 
-    const char *GenerateStatusResponse();
+    static const char *GenerateStatusResponse();
 
     static void CloseValve();
     static void OpenValve();

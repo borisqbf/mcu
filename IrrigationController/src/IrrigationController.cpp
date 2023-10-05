@@ -1,21 +1,38 @@
 
 #include "IrrigationController.h"
 
-static IrrigationController theInstance;
+// Statics
+IrrigationController *IrrigationController::theInstance = NULL;
+enum State IrrigationController::currentState = State::Idle;
+WebController *IrrigationController::webController= NULL;
+Chronos::DateTime IrrigationController::stateChangedAt;
+
+float IrrigationController::waterVolume = 0.0;
+long IrrigationController::lastTimeVolumeMeasured = 0;
+float IrrigationController::waterVolumeTarget = 0.0;
+float IrrigationController::waterFlow = 0.0;
+long IrrigationController::pulseCounter = 0;
+byte IrrigationController::lastStateOfvolumeMetterPin = 0;
 
 IrrigationController *IrrigationController::GetInstance()
 {
-    return &theInstance;
+    if (theInstance == NULL)
+    {
+        theInstance = new IrrigationController();
+
+        // returning the instance pointer
+        return theInstance;
+    }
+    else
+    {
+        return theInstance;
+    }
 }
 
 IrrigationController::IrrigationController(/* args */)
 {
     digitalWrite(valveOpenPin, LOW);
     digitalWrite(valveClosePin, LOW);
-}
-
-IrrigationController::~IrrigationController()
-{
 }
 
 void IrrigationController::Setup()
@@ -48,14 +65,14 @@ void IrrigationController::ProcesMainLoop()
             Chronos::Span::Absolute duration = n - stateChangedAt;
             CloseValve();
 
-            snprintf(message, 150, "Watering finished at %0u/%0u/%0u %0u:%0u.  Watering target of %u liters has been reached. The process took %u minutes.", n.day(), n.month(), n.year(), n.hour(), n.minute(), static_cast<int>(waterVolumeTarget), duration.minutes());
+            snprintf(message, 150, "Watering finished at %02d/%02d/%d %02d:%02d.  Watering target of %d liters has been reached. The process took %d minutes.", n.day(), n.month(), n.year(), n.hour(), n.minute(), static_cast<int>(waterVolumeTarget), duration.minutes());
             webController->Alert(message);
         }
         else if (CheckEndTime())
         {
             Chronos::DateTime n = Chronos::DateTime::now();
             CloseValve();
-            snprintf(message, 150, "Watering aborted at %02u/%02u/%u %02u:%02u after %u minutes. Watering target of %du liters has not been reached. %u liters have been dispensed", n.day(), n.month(), n.year(), n.hour(), n.minute(), maxWateringTime, static_cast<int>(waterVolumeTarget), static_cast<int>(waterVolume));
+            snprintf(message, 150, "Watering aborted at %02d/%02d/%d %02d:%02d after %d minutes. Watering target of %d liters has not been reached. %d liters have been dispensed", n.day(), n.month(), n.year(), n.hour(), n.minute(), maxWateringTime, static_cast<int>(waterVolumeTarget), static_cast<int>(waterVolume));
             webController->Alert(message);
         }
         else
@@ -122,8 +139,8 @@ void IrrigationController::ValveClosed()
 
 void IrrigationController::Reset()
 {
-    theInstance.currentState = State::Idle;
-    theInstance.InializeFlow();
+    currentState = State::Idle;
+    InializeFlow();
 }
 
 float IrrigationController::GetWaterFlow()
@@ -187,22 +204,22 @@ const char *IrrigationController::GenerateStatusResponse()
 
 void IrrigationController::CloseValve()
 {
-    theInstance.currentState = State::ClosingValve;
-    theInstance.stateChangedAt = Chronos::DateTime::now();
+    currentState = State::ClosingValve;
+    stateChangedAt = Chronos::DateTime::now();
     digitalWrite(valveOpenPin, LOW);
     digitalWrite(valveClosePin, HIGH);
 
-    theInstance.webController->SendHttpResponse(theInstance.GenerateStatusResponse());
+    webController->SendHttpResponse(GenerateStatusResponse());
 }
 
 void IrrigationController::OpenValve()
 {
-    theInstance.currentState = State::OpeningValve;
-    theInstance.stateChangedAt = Chronos::DateTime::now();
+    currentState = State::OpeningValve;
+    stateChangedAt = Chronos::DateTime::now();
     digitalWrite(valveOpenPin, HIGH);
     digitalWrite(valveClosePin, LOW);
 
-    theInstance.webController->SendHttpResponse(theInstance.GenerateStatusResponse());
+    webController->SendHttpResponse(GenerateStatusResponse());
 }
 
 void IrrigationController::InializeFlow()
