@@ -18,15 +18,20 @@ class WiFiController
 public:
     void Setup();
     static WiFiController *GetInstance();
-    WiFiController();
 
 private:
-    WiFiClient client;
+    WiFiController();
+    static WiFiClient client;
+    static WiFiController *theInstance;
     // WI-FI settings
     const char *ssid = "QBF";
     const char *pass = "!QbfReward00";
 
-    unsigned int localPort = 2390; // local port to listen for UDP packets
+    static byte packetBuffer[];
+    static WiFiUDP Udp;
+    static Timezone ausET;
+
+    static unsigned int localPort; // local port to listen for UDP packets
 
     static void SendNTPpacket(const char *ntpSrv);
     static void PrintWifiStatus();

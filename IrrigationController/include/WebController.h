@@ -13,7 +13,7 @@
 /* The log in credentials */
 #define AUTHOR_EMAIL "borisqbf@gmail.com"
 #define AUTHOR_PASSWORD "wxumeztmydfrakhd"
-#define RECIPIENT_EMAIL "borisqbf@gmail.com"
+#define RECIPIENT_EMAIL "boris_qbf@hotmail.com"
 
     class WebController
 {

@@ -102,6 +102,7 @@ void IrrigationController::ProcesMainLoop()
         if ((Chronos::DateTime::now() - stateChangedAt) > Chronos::Span::Seconds(maxValveActionTime))
         {
             webController->Alert("Unable to open Valve.");
+            currentState = State::Watering; // This is the best guess
         }
     }
     else if (currentState == State::ClosingValve)
@@ -109,6 +110,7 @@ void IrrigationController::ProcesMainLoop()
         if ((Chronos::DateTime::now() - stateChangedAt) > Chronos::Span::Seconds(maxValveActionTime))
         {
             webController->Alert("Unable to close Valve");
+            currentState = State::Idle; // This is the best guess
         }
     }
 }

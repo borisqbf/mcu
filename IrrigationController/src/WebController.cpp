@@ -10,6 +10,21 @@ SMTPSession WebController::smtp;
 int WebController::nextRouteIndex = 1; // one for root
 WebServer *WebController::server = NULL;
 
+WebController *WebController::GetInstance()
+{
+    if (theInstance == NULL)
+    {
+        theInstance = new WebController();
+
+        // returning the instance pointer
+        return theInstance;
+    }
+    else
+    {
+        return theInstance;
+    }
+}
+
 void WebController::HandleRoot()
 {
     String message = "Hello resolved by mDNS!\n\n";
@@ -64,21 +79,6 @@ void WebController::HandleNotFound()
     message += "\n";
 
     server->send(404, "text/plain", message);
-}
-
-WebController *WebController::GetInstance()
-{
-    if (theInstance == NULL)
-    {
-        theInstance = new WebController();
-
-        // returning the instance pointer
-        return theInstance;
-    }
-    else
-    {
-        return theInstance;
-    }
 }
 
 void WebController::AddAction(const char *url, WebServer::THandlerFunction action)

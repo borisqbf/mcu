@@ -19,7 +19,25 @@ enum State
 
 class IrrigationController
 {
+public:
+    static IrrigationController *GetInstance();
+    void Setup();
+    void ProcesMainLoop();
+    void ValveOpen();
+    void ValveClosed();
+
+    static float GetWaterFlow();
+    static const char *GetCurrentState();
+    bool IsIdle() { return currentState == State::Idle; };
+
+    static const char *GenerateStatusResponse();
+
+    static void CloseValve();
+    static void OpenValve();
+    static void Reset();
+
 private:
+    IrrigationController(/* args */);
     static WebController *webController;
     static enum State currentState;
     static Chronos::DateTime stateChangedAt;
@@ -41,25 +59,6 @@ private:
     void SetEndTime();
     void SetNextStartTime();
     static void InializeFlow();
-
-
-public:
-    IrrigationController(/* args */);
-    static IrrigationController *GetInstance();
-    void Setup();
-    void ProcesMainLoop();
-    void ValveOpen();
-    void ValveClosed();
-
-    static float GetWaterFlow();
-    static const char *GetCurrentState();
-    bool IsIdle() { return currentState == State::Idle; };
-
-    static const char *GenerateStatusResponse();
-
-    static void CloseValve();
-    static void OpenValve();
-    static void Reset();
 };
 
 #endif

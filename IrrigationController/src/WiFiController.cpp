@@ -1,19 +1,31 @@
-
 #include "WiFiController.h"
 #include "IrrigationController.h"
 
+// Statics
+WiFiController *WiFiController::theInstance = NULL;
+unsigned int WiFiController::localPort = 2390; // local port to listen for UDP packets
+byte WiFiController::packetBuffer[NTP_PACKET_SIZE];
 
-static WiFiController theInstance;
-byte packetBuffer[NTP_PACKET_SIZE];
-WiFiUDP Udp;
+WiFiUDP WiFiController::Udp;
 // Australia Eastern Time Zone (Sydney, Melbourne)
+
 TimeChangeRule aEDT = {"AEDT", First, Sun, Oct, 2, 660}; // UTC + 11 hours
 TimeChangeRule aEST = {"AEST", First, Sun, Apr, 3, 600}; // UTC + 10 hours
-Timezone ausET(aEDT, aEST);
+Timezone WiFiController::ausET(aEDT, aEST);
 
 WiFiController *WiFiController::GetInstance()
 {
-    return &theInstance;
+    if (theInstance == NULL)
+    {
+        theInstance = new WiFiController();
+
+        // returning the instance pointer
+        return theInstance;
+    }
+    else
+    {
+        return theInstance;
+    }
 }
 
 WiFiController::WiFiController()
@@ -48,6 +60,7 @@ time_t WiFiController::GetNTPTime()
         unsigned long startMs = millis();
         while (!Udp.available() && (millis() - startMs) < UDP_TIMEOUT)
         {
+            delay(10);
         }
 
         int size = Udp.parsePacket();
@@ -65,7 +78,9 @@ time_t WiFiController::GetNTPTime()
             unsigned long epoch = secsSince1900 - seventyYears;
             return ausET.toLocal(epoch);
         }
-        Serial.println("No NTP Response");
+        Serial.print("No NTP Response. Received ");
+        Serial.print(size);
+        Serial.println(" byte(s)");
         return 0; // return 0 if unable to get the time
     }
 }
