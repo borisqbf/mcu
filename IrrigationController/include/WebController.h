@@ -15,13 +15,19 @@
 #define AUTHOR_PASSWORD "wxumeztmydfrakhd"
 #define RECIPIENT_EMAIL "boris_qbf@hotmail.com"
 
-    class WebController
+class WebController
 {
-    public:
+public:
     struct Route
     {
         const char *url;
         WebServer::THandlerFunction handler;
+    };
+
+    struct UrlQueryParameter
+    {
+        const char *p;
+        const char *v;
     };
 
 public:
@@ -29,7 +35,8 @@ public:
     void ProcessMainLoop();
     void Alert(const char *message);
     static WebController *GetInstance();
-    static void AddAction(const char* url, WebServer::THandlerFunction action);
+    static void AddAction(const char *url, WebServer::THandlerFunction action);
+    static UrlQueryParameter *GetUrlQueryParams();
     void SendHttpResponse(const char *message);
 
 private:

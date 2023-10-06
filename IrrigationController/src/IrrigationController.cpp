@@ -1,4 +1,3 @@
-
 #include "IrrigationController.h"
 
 // Statics
@@ -48,6 +47,7 @@ void IrrigationController::Setup()
     WebController::AddAction("/on", &IrrigationController::OpenValve);
     WebController::AddAction("/off", &IrrigationController::CloseValve);
     WebController::AddAction("/reset", &IrrigationController::Reset);
+    WebController::AddAction("/set-params", &IrrigationController::SetParams);
 }
 
 void IrrigationController::ProcesMainLoop()
@@ -110,7 +110,8 @@ void IrrigationController::ProcesMainLoop()
     {
         if ((Chronos::DateTime::now() - stateChangedAt) > Chronos::Span::Seconds(maxValveActionTime))
         {
-            webController->Alert("Unable to open Valve.");
+            if (digitalRead(interruptValveOpenPin) != LOW)
+                webController->Alert("Unable to open Valve.");
             currentState = State::Watering; // This is the best guess
         }
     }
@@ -118,7 +119,8 @@ void IrrigationController::ProcesMainLoop()
     {
         if ((Chronos::DateTime::now() - stateChangedAt) > Chronos::Span::Seconds(maxValveActionTime))
         {
-            webController->Alert("Unable to close Valve");
+            if (digitalRead(interruptValveClosedPin) != LOW)
+                webController->Alert("Unable to close Valve");
             currentState = State::Idle; // This is the best guess
         }
     }
@@ -152,6 +154,25 @@ void IrrigationController::Reset()
 {
     currentState = State::Idle;
     InializeFlow();
+}
+
+void IrrigationController::SetParams()
+{
+    WebController::UrlQueryParameter *params = WebController::GetUrlQueryParams();
+    if (params == NULL)
+        webController->SendHttpResponse("Missing Parameters");
+    else
+    {
+        Serial.println("Query Params:");
+        while (*params->p != NULL)
+        {
+            Serial.print(*params->p);
+            Serial.print(":");
+            Serial.print(*params->v);
+        }
+        delete params; // deallocate
+        webController->SendHttpResponse("Configuration successful");
+    }
 }
 
 float IrrigationController::GetWaterFlow()
@@ -246,7 +267,7 @@ const char *IrrigationController::GenerateStatusResponse()
 {
     static char message[250];
     Chronos::DateTime n = Chronos::DateTime::now();
-    snprintf(message, 250, "Current time is %02u/%02u/%u %02u:%02u\nCurrent state is %s\nCurrent flow is %d\n", n.day(), n.month(), n.year(), n.hour(), n.minute(), GetCurrentState(), static_cast<int>(GetWaterFlow()));
+    snprintf(message, 250, "Current time is %02u/%02u/%u %02u:%02u\nCurrent state is %s\nCurrent flow is %d\n\n", n.day(), n.month(), n.year(), n.hour(), n.minute(), GetCurrentState(), static_cast<int>(GetWaterFlow()));
     Serial.println(message);
     return message;
 }

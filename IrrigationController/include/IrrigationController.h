@@ -39,8 +39,9 @@ public:
 
     static void CloseValve();
     static void OpenValve();
-    static void WaterFlowTick();
     static void Reset();
+    static void SetParams();
+    static void WaterFlowTick();
 
 private:
     IrrigationController();
