@@ -39,9 +39,8 @@ void IrrigationController::Setup()
 {
     if (digitalRead(interruptValveOpenPin) == LOW)
     {
-        currentState = State::Watering;
-        webController->Alert("Unexpected valve in Open state while powering up. Attempting to close.");
         CloseValveInt();
+        webController->Alert("Unexpected valve in Open state while powering up. Attempting to close.");
     }
     webController = WebController::GetInstance();
     lastTimeVolumeMeasured = millis();

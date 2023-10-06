@@ -40,15 +40,15 @@ void setup()
 
   Serial.begin(115200);
   delay (500);
+
   wifi = WiFiController::GetInstance();
   wifi->Setup();
 
+  web = WebController::GetInstance();
+  web->Setup();
+
   controller = IrrigationController::GetInstance();
   controller->Setup();
-
-  web = WebController::GetInstance();
-
-  web->Setup();
 
   attachInterrupt(digitalPinToInterrupt(interruptValveOpenPin), ValveOpen, FALLING);
   attachInterrupt(digitalPinToInterrupt(interruptValveClosedPin), ValveClosed, FALLING);
