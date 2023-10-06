@@ -13,10 +13,6 @@ IrrigationController *controller = NULL;
 WiFiController *wifi = NULL;
 WebController *web = NULL;
 
-// Pins
-const byte interruptValveOpenPin = 22;
-const byte interruptValveClosedPin = 23;
-
 void ValveOpen()
 {
   controller->ValveOpen();
@@ -27,49 +23,10 @@ void ValveClosed()
   controller->ValveClosed();
 }
 
-
-#if !CONFIG_AUTOSTART_ARDUINO
-void arduinoTask(void *pvParameter)
+void WaterFlowTick()
 {
-  pinMode(valveOpenPin, OUTPUT);
-  pinMode(valveClosePin, OUTPUT);
-  pinMode(interruptValveOpenPin, INPUT_PULLUP);
-  pinMode(interruptValveClosedPin, INPUT_PULLUP);
-  pinMode(volumeMetterPin, INPUT_PULLUP);
-
-  Serial.begin(115200);
-  wifi = WiFiController::GetInstance();
-  wifi->Setup();
-
-  controller = IrrigationController::GetInstance();
-  controller->Setup();
-
-  web = WebController::GetInstance();
-
-  web->Setup();
-
-  attachInterrupt(digitalPinToInterrupt(interruptValveOpenPin), ValveOpen, FALLING);
-  attachInterrupt(digitalPinToInterrupt(interruptValveClosedPin), ValveClosed, FALLING);
-
-  delay(100);
-
-  while (1)
-  {
-    controller->ProcesMainLoop(); // put your main code here, to run repeatedly:
-    web->ProcessMainLoop();
-    delay(50);
-  }
+  controller->WaterFlowTick();
 }
-
-extern "C" void app_main()
-{
-  // initialize arduino library before we start the tasks
-  initArduino();
-
-  xTaskCreate(&arduinoTask, "arduino_task", configMINIMAL_STACK_SIZE, NULL, 5, NULL);
-}
-#else
-
 
 void setup()
 {
@@ -77,10 +34,9 @@ void setup()
   pinMode(valveOpenPin, OUTPUT);
   pinMode(valveClosePin, OUTPUT);
 
+  pinMode(interruptWaterFlowTickPin, INPUT_PULLUP);
   pinMode(interruptValveOpenPin, INPUT_PULLUP);
   pinMode(interruptValveClosedPin, INPUT_PULLUP);
-
-  pinMode(volumeMetterPin, INPUT_PULLUP);
 
   Serial.begin(115200);
   delay (500);
@@ -96,6 +52,8 @@ void setup()
 
   attachInterrupt(digitalPinToInterrupt(interruptValveOpenPin), ValveOpen, FALLING);
   attachInterrupt(digitalPinToInterrupt(interruptValveClosedPin), ValveClosed, FALLING);
+  attachInterrupt(digitalPinToInterrupt(interruptWaterFlowTickPin), WaterFlowTick, FALLING);
+
   web->Alert("Irrigation controller has started.");
 }
 
@@ -104,4 +62,3 @@ void loop()
     controller->ProcesMainLoop(); // put your main code here, to run repeatedly:
     web->ProcessMainLoop();
 }
-#endif

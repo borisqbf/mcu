@@ -4,15 +4,15 @@
 // Statics
 IrrigationController *IrrigationController::theInstance = NULL;
 enum State IrrigationController::currentState = State::Idle;
-WebController *IrrigationController::webController= NULL;
+WebController *IrrigationController::webController = NULL;
 Chronos::DateTime IrrigationController::stateChangedAt;
 
 float IrrigationController::waterVolume = 0.0;
 long IrrigationController::lastTimeVolumeMeasured = 0;
 float IrrigationController::waterVolumeTarget = 0.0;
-float IrrigationController::waterFlow = 0.0;
+float IrrigationController::waterFlowRate = 0.0;
 long IrrigationController::pulseCounter = 0;
-byte IrrigationController::lastStateOfvolumeMetterPin = 0;
+bool IrrigationController::flowTooLow = false;
 
 IrrigationController *IrrigationController::GetInstance()
 {
@@ -29,7 +29,7 @@ IrrigationController *IrrigationController::GetInstance()
     }
 }
 
-IrrigationController::IrrigationController(/* args */)
+IrrigationController::IrrigationController()
 {
     digitalWrite(valveOpenPin, LOW);
     digitalWrite(valveClosePin, LOW);
@@ -37,6 +37,12 @@ IrrigationController::IrrigationController(/* args */)
 
 void IrrigationController::Setup()
 {
+    if (digitalRead(interruptValveOpenPin) == LOW)
+    {
+        currentState = State::Watering;
+        webController->Alert("Unexpected valve in Open state while powering up. Attempting to close.");
+        CloseValveInt();
+    }
     webController = WebController::GetInstance();
     lastTimeVolumeMeasured = millis();
 
@@ -53,7 +59,7 @@ void IrrigationController::ProcesMainLoop()
         {
             SetEndTime();
             SetNextStartTime();
-            OpenValve();
+            OpenValveInt();
         }
     }
     else if (currentState == State::Watering)
@@ -63,7 +69,7 @@ void IrrigationController::ProcesMainLoop()
         {
             Chronos::DateTime n = Chronos::DateTime::now();
             Chronos::Span::Absolute duration = n - stateChangedAt;
-            CloseValve();
+            CloseValveInt();
 
             snprintf(message, 150, "Watering finished at %02d/%02d/%d %02d:%02d.  Watering target of %d liters has been reached. The process took %d minutes.", n.day(), n.month(), n.year(), n.hour(), n.minute(), static_cast<int>(waterVolumeTarget), duration.minutes());
             webController->Alert(message);
@@ -71,29 +77,33 @@ void IrrigationController::ProcesMainLoop()
         else if (CheckEndTime())
         {
             Chronos::DateTime n = Chronos::DateTime::now();
-            CloseValve();
+            CloseValveInt();
             snprintf(message, 150, "Watering aborted at %02d/%02d/%d %02d:%02d after %d minutes. Watering target of %d liters has not been reached. %d liters have been dispensed", n.day(), n.month(), n.year(), n.hour(), n.minute(), maxWateringTime, static_cast<int>(waterVolumeTarget), static_cast<int>(waterVolume));
             webController->Alert(message);
-        }
-        else
-        {
-            if (!CheckWaterFlow())
-                webController->Alert("Insufficient waterflow.");
         }
         if ((millis() - lastTimeVolumeMeasured) > 30000)
         {
             float frequency = (pulseCounter * 1000.0) / (millis() - lastTimeVolumeMeasured);
-            waterFlow = frequency / 5.5;
+            waterFlowRate = frequency / 5.5; // liters per minute
             pulseCounter = 0;
-            waterVolume += (waterFlow * 2);
+            waterVolume += waterFlowRate * 0.5; // as this is executed every 30 sec
             lastTimeVolumeMeasured = millis();
-        }
-        if (digitalRead(volumeMetterPin) != lastStateOfvolumeMetterPin)
-        {
-            lastStateOfvolumeMetterPin = digitalRead(volumeMetterPin);
-            if (lastStateOfvolumeMetterPin == HIGH)
+
+            if (CheckForLowWaterFlow())
             {
-                pulseCounter++;
+                if (!flowTooLow)
+                {
+                    flowTooLow = true;
+                    webController->Alert("Insufficient waterflow.");
+                }
+            }
+            if (CheckForNormalWaterFlow())
+            {
+                if (flowTooLow)
+                {
+                    flowTooLow = false;
+                    webController->Alert("Waterflow is back to normal.");
+                }
             }
         }
     }
@@ -147,7 +157,7 @@ void IrrigationController::Reset()
 
 float IrrigationController::GetWaterFlow()
 {
-    return waterFlow;
+    return waterFlowRate;
 }
 
 const char *IrrigationController::GetCurrentState()
@@ -177,9 +187,14 @@ bool IrrigationController::CheckEndTime()
     return false;
 }
 
-bool IrrigationController::CheckWaterFlow()
+bool IrrigationController::CheckForLowWaterFlow()
 {
-    return false;
+    return waterFlowRate < lowWaterFlowThreshold * 0.9; // 10% under threshold
+}
+
+bool IrrigationController::CheckForNormalWaterFlow()
+{
+    return waterFlowRate > lowWaterFlowThreshold * 1.1; // 10% under threshold
 }
 
 bool IrrigationController::CheckWateringTarget()
@@ -195,6 +210,39 @@ void IrrigationController::SetNextStartTime()
 {
 }
 
+void IrrigationController::CloseValveInt()
+{
+    currentState = State::ClosingValve;
+    stateChangedAt = Chronos::DateTime::now();
+    digitalWrite(valveOpenPin, LOW);
+    digitalWrite(valveClosePin, HIGH);
+}
+
+void IrrigationController::OpenValveInt()
+{
+    currentState = State::OpeningValve;
+    stateChangedAt = Chronos::DateTime::now();
+    digitalWrite(valveOpenPin, HIGH);
+    digitalWrite(valveClosePin, LOW);
+}
+
+void IrrigationController::CloseValve()
+{
+    CloseValveInt();
+    webController->SendHttpResponse(GenerateStatusResponse());
+}
+
+void IrrigationController::OpenValve()
+{
+    OpenValveInt();
+    webController->SendHttpResponse(GenerateStatusResponse());
+}
+
+void IrrigationController::WaterFlowTick()
+{
+    pulseCounter++;
+}
+
 const char *IrrigationController::GenerateStatusResponse()
 {
     static char message[250];
@@ -204,31 +252,11 @@ const char *IrrigationController::GenerateStatusResponse()
     return message;
 }
 
-void IrrigationController::CloseValve()
-{
-    currentState = State::ClosingValve;
-    stateChangedAt = Chronos::DateTime::now();
-    digitalWrite(valveOpenPin, LOW);
-    digitalWrite(valveClosePin, HIGH);
-
-    webController->SendHttpResponse(GenerateStatusResponse());
-}
-
-void IrrigationController::OpenValve()
-{
-    currentState = State::OpeningValve;
-    stateChangedAt = Chronos::DateTime::now();
-    digitalWrite(valveOpenPin, HIGH);
-    digitalWrite(valveClosePin, LOW);
-
-    webController->SendHttpResponse(GenerateStatusResponse());
-}
-
 void IrrigationController::InializeFlow()
 {
     waterVolume = 0.0;
     lastTimeVolumeMeasured = millis();
-    waterFlow = 0.0;
-    lastStateOfvolumeMetterPin = LOW;
+    waterFlowRate = 0.0;
     pulseCounter = 0;
+    flowTooLow = false;
 }
