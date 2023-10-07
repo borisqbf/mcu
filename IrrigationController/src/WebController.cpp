@@ -102,9 +102,9 @@ WebController::UrlQueryParameter *WebController::GetUrlQueryParams()
         uint8_t i = 0;
         for (i = 0; i < server->args(); i++)
         {
-            retVal[i] = {server->argName(i).c_str(), server->arg(i).c_str()};
+            retVal[i] = {server->argName(i), server->arg(i)};
         }
-        retVal[i] = {nullptr, nullptr};
+        retVal[i] = {"", ""};
         return retVal;
     }
 }

@@ -159,18 +159,19 @@ void IrrigationController::Reset()
 void IrrigationController::SetParams()
 {
     WebController::UrlQueryParameter *params = WebController::GetUrlQueryParams();
-    if (params == NULL)
+    if (params == nullptr)
         webController->SendHttpResponse("Missing Parameters\n\n");
     else
     {
         Serial.println("Query Params:");
-        while (*params->p)
+        while ((*params).p != "")
         {
-            Serial.print(*params->p);
+            Serial.print((*params).p);
             Serial.print(":");
-            Serial.print(*params->v);
+            Serial.print((*params).v);
         }
         delete params; // deallocate
+        params = nullptr;
         webController->SendHttpResponse("Configuration successful\n\n");
     }
 }

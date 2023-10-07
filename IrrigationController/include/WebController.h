@@ -26,8 +26,8 @@ public:
 
     struct UrlQueryParameter
     {
-        const char *p;
-        const char *v;
+        String p;
+        String v;
     };
 
 public:
