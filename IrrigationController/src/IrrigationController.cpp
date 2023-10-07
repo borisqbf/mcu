@@ -172,7 +172,7 @@ void IrrigationController::SetParams()
             Serial.println((*params).v);
             params++;
         }
-        delete paramsToDelete; // deallocate
+        delete[] paramsToDelete; // deallocate
         paramsToDelete = nullptr;
         webController->SendHttpResponse("Configuration successful\n\n");
     }
