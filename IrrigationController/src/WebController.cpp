@@ -31,7 +31,7 @@ void WebController::HandleRoot()
     message += "\nAvailable routes are:\n";
     for (int i = 0; i < MAX_ROUTES; i++)
     {
-        if (routes[i].url == NULL)
+        if (routes[i].url == nullptr)
             break;
         message += routes[i].url;
         message += "\n";
@@ -57,7 +57,7 @@ void WebController::HandleNotFound()
     message += "\nAvailable routes are:\n";
     for (int i = 0; i < MAX_ROUTES; i++)
     {
-        if (routes[i].url == NULL)
+        if (routes[i].url == nullptr)
             break;
         message += routes[i].url;
         message += "\n";
@@ -84,7 +84,10 @@ void WebController::HandleNotFound()
 void WebController::AddAction(const char *url, WebServer::THandlerFunction action)
 {
     if (nextRouteIndex < MAX_ROUTES)
+    {
         routes[nextRouteIndex++] = {url, action};
+        server->on(url, action);
+    }
     else
         Serial.println("No more route slots available");
 }
@@ -101,7 +104,7 @@ WebController::UrlQueryParameter *WebController::GetUrlQueryParams()
         {
             retVal[i] = {server->argName(i).c_str(), server->arg(i).c_str()};
         }
-        retVal[i] = {NULL, NULL};
+        retVal[i] = {nullptr, nullptr};
         return retVal;
     }
 }
@@ -109,6 +112,12 @@ WebController::UrlQueryParameter *WebController::GetUrlQueryParams()
 WebController::WebController()
 {
     server = new WebServer(80);
+    routes[0] = {"/", &WebController::HandleRoot};
+    for (int i = 1; i < MAX_ROUTES; i++)
+    {
+        routes[i].url = nullptr;
+        routes[i].handler = nullptr;
+    }
 }
 
 void WebController::Setup()
@@ -118,14 +127,7 @@ void WebController::Setup()
 
         Serial.println("MDNS started");
     }
-    routes[0] = {"/", &WebController::HandleRoot};
-    for (int i = 0; i < MAX_ROUTES; i++)
-    {
-        if (routes[i].url == NULL)
-            break;
-        server->on(routes[i].url, routes[i].handler);
-    }
-
+ 
     server->onNotFound(HandleNotFound);
 
     server->begin(); // Start server
