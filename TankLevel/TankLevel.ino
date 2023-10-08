@@ -6,23 +6,18 @@
 #include <LcdBarGraphX.h>
 
 #define REG_00H 0x0
-#define measurementBufferSize 100
 
 const int led = 13;
 
-const int maxWaterColumnHeight = 215;   // cm
-const int bottomDeadSpace = 20;         // cm
-const int topDeadSpace = 15;            // cm
+const int maxWaterColumnHeight = 215; // cm
+const int bottomDeadSpace = 20;       // cm
+const int topDeadSpace = 15;          // cm
 
 const int TOF250address = 0x52;
 const int LCDaddress = 0x27;
 byte lcdNumCols = 16;
 
 double distance = maxWaterColumnHeight;
-
-unsigned int measurements[measurementBufferSize];
-byte measurementInsertionPoint = 0;
-bool measurementBufferFull = false;
 
 // -- number of columns in the LCD
 LiquidCrystal_I2C lcd(LCDaddress, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE); // -- creating LCD instance
@@ -154,7 +149,7 @@ void CalculatePercentage()
     usableWaterLevel = 0;
 
   waterLevelPercentage = (usableWaterLevel / (maxWaterColumnHeight - topDeadSpace - bottomDeadSpace)) * 100;
-  
+
   if (waterLevelPercentage > 100)
   {
     waterLevelPercentage = 100;
@@ -167,41 +162,17 @@ void CalculatePercentage()
 
 bool IsGoodSample(double sample)
 {
-  if (!measurementBufferFull)
-    return true; // any sample is good
-  else
-  {
-    return abs(distance - sample) < distance * 0.2; // 20%; Can't use stddev as the distribution is not guaranteed to be normal. E.g. empty tank would have stdev of 0.00
-  }
+  return abs(distance - sample) < distance * 0.2; // 20%; Can't use stddev as the distribution is not guaranteed to be normal. E.g. empty tank would have stdev of 0.00
 }
 
-double CalcStdDev()
+double CalculateDistance(double sample)
 {
-  double sumOfSquares = 0;
-  for (int i = 0; i < measurementBufferSize; i++)
-  {
-    double dev = measurements[i] - distance;
-    sumOfSquares += dev * dev;
-  }
-  return sqrt(sumOfSquares / measurementBufferSize);
-}
 
-double CalculateDistance()
-{
-  double average = 0;
-  int numberOfSamples = measurementBufferFull ? measurementBufferSize : measurementInsertionPoint;
-
-  for (int i = 0; i < numberOfSamples; i++)
-  {
-    average += measurements[i];
-  }
-
-  return average / numberOfSamples;
+  return (sample + distance) / 2;
 }
 
 void setup()
 {
-  memset(measurements, '\0', measurementBufferSize * sizeof(int));
   Serial.begin(115200);
   pinMode(led, OUTPUT);
   digitalWrite(led, 0);
@@ -221,14 +192,9 @@ void loop()
     lastTimePolled = millis();
     double currentMeasurement = GetLidarDataFromI2C(TOF250address);
     if (IsGoodSample(currentMeasurement))
-      measurements[measurementInsertionPoint++] = currentMeasurement;
-    if (measurementInsertionPoint == measurementBufferSize)
     {
-      measurementInsertionPoint = 0;
-      measurementBufferFull = true;
+      distance = CalculateDistance(currentMeasurement);
     }
-
-    distance = CalculateDistance();
     CalculatePercentage();
     int pc = waterLevelPercentage * 100;
     lbg.drawValue(pc, 10000);

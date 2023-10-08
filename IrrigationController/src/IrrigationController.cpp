@@ -170,6 +170,7 @@ void IrrigationController::SetParams()
             Serial.print((*params).p);
             Serial.print(":");
             Serial.println((*params).v);
+            
             params++;
         }
         delete[] paramsToDelete; // deallocate
