@@ -161,12 +161,14 @@ void CalculatePercentage()
 
 bool IsGoodSample(double sample)
 {
-  return abs(distance - sample) < distance * 0.2; // 20%; Can't use stddev as the distribution is not guaranteed to be normal. E.g. empty tank would have stdev of 0.00
+  if (distance <= (maxWaterColumnHeight - bottomDeadSpace))
+    return true; // when just started any sample is a good one
+  else
+    return abs(distance - sample) < distance * 0.2; // 20%; Can't use stddev as the distribution is not guaranteed to be normal. E.g. empty tank would have stdev of 0.00
 }
 
 double CalculateDistance(double sample)
 {
-
   return (sample + distance) / 2;
 }
 
