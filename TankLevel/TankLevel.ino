@@ -23,7 +23,7 @@ double distance = maxWaterColumnHeight;
 LiquidCrystal_I2C lcd(LCDaddress, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE); // -- creating LCD instance
 LcdBarGraphX lbg(&lcd, 16, 0, 1);
 
-const int pollingPeriodicity = 7 * 1000; // report state every xx seconds
+const int pollingPeriodicity = 3 * 1000; // report state every xx seconds
 unsigned long lastTimePolled = 0;
 
 const char *ssid = "QBF";          // your network SSID (name)
@@ -31,8 +31,7 @@ const char *pass = "!QbfReward00"; // your network password
 const char *absLevelURL = "/api/level-abs";
 const char *pcLevelURL = "/api/level-pc";
 
-// Create an ESP8266 WiFiClient class to connect to the MQTT server.
-WiFiClient client;
+
 ESP8266WebServer server(80);
 
 double waterLevelPercentage = 0.00;
