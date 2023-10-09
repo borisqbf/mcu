@@ -71,8 +71,6 @@ private:
     bool CheckForLowWaterFlow();
     bool CheckForNormalWaterFlow();
     bool CheckWateringTarget();
-    void SetEndTime();
-    void SetNextStartTime();
     static void CloseValveInt();
     static void OpenValveInt();
     static void InializeFlow();

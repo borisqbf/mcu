@@ -61,8 +61,6 @@ void IrrigationController::ProcesMainLoop()
     {
         if (CheckStartTime())
         {
-            SetEndTime();
-            SetNextStartTime();
             OpenValveInt();
         }
     }
@@ -257,9 +255,9 @@ void IrrigationController::SetCalendar()
             params++;
         }
 
-        wateringCalendar.add(Chronos::Event(1,
-                                            Chronos::Mark::Daily(hour, minute),
-                                            Chronos::Span::Minutes(maxWateringTime)));
+             wateringCalendar.add(Chronos::Event(1,
+                                                Chronos::Mark::Daily(hour, minute, 0, freq),
+                                                Chronos::Span::Minutes(1)));
         delete[] paramsToDelete; // deallocate
         paramsToDelete = nullptr;
         webController->SendHttpResponseOK("Watering Schedule set\n\n");
@@ -277,8 +275,8 @@ void IrrigationController::GetStatus()
     const byte nEvents = 3;
     Chronos::Event::Occurrence eventArray[nEvents];
 
-    static char response[1024];
-    memset(response, '\0', 1024);
+    static char response[512];
+    memset(response, '\0', 512);
     strcat(response, GenerateStatusResponse());
     Chronos::DateTime n = Chronos::DateTime::now();
 
@@ -324,12 +322,22 @@ const char *IrrigationController::GetCurrentState()
 
 bool IrrigationController::CheckStartTime()
 {
-    return false;
+    const byte nEvents = 1;
+    Chronos::Event::Occurrence eventArray[nEvents];
+
+    Chronos::DateTime n = Chronos::DateTime::now();
+
+    return (wateringCalendar.listOngoing(nEvents, eventArray, n) > 0);
 }
 
 bool IrrigationController::CheckEndTime()
 {
-    return false;
+    if (currentState != State::Watering)
+        return false;
+    else
+    {
+        return ((Chronos::DateTime::now() - stateChangedAt) > Chronos::Span::Minutes(maxWateringTime));
+    }
 }
 
 bool IrrigationController::CheckForLowWaterFlow()
@@ -345,14 +353,6 @@ bool IrrigationController::CheckForNormalWaterFlow()
 bool IrrigationController::CheckWateringTarget()
 {
     return false;
-}
-
-void IrrigationController::SetEndTime()
-{
-}
-
-void IrrigationController::SetNextStartTime()
-{
 }
 
 void IrrigationController::CloseValveInt()

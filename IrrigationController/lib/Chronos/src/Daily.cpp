@@ -30,10 +30,9 @@
 namespace Chronos {
 namespace Mark {
 
-Daily::Daily(Hours h, Minutes m, Seconds s) :
-	Event(),
-	hour(h), minute(m), sec(s)
-{
+	Daily::Daily(Hours h, Minutes m, Seconds s, int n) : Event(),
+															 hour(h), minute(m), sec(s), nDays(n)
+	{
 
 }
 
@@ -63,7 +62,7 @@ DateTime Daily::next(const DateTime & dt) const {
 	if (theNext > dt)
 		return theNext;
 
-	theNext += Span::Days(1);
+	theNext += Span::Days(nDays);
 
 	return theNext;
 
@@ -77,7 +76,7 @@ DateTime Daily::previous(const DateTime & dt)  const {
 	if (thePrev < dt)
 		return thePrev;
 
-	thePrev -= Span::Days(1);
+	thePrev -= Span::Days(nDays);
 	return thePrev;
 }
 

@@ -34,7 +34,7 @@ namespace Mark {
 
 class Daily : public Event {
 public:
-	Daily(Hours hour, Minutes min, Seconds sec=0);
+	Daily(Hours hour, Minutes min, Seconds sec=0, int nDays=1);
 
 
 	virtual DateTime next(const DateTime & dt) const;
@@ -47,6 +47,7 @@ private:
 	Hours hour;
 	Minutes minute;
 	Seconds sec;
+	int nDays;
 };
 
 } /* namespace Event */
