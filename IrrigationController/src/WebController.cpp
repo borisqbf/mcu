@@ -127,7 +127,7 @@ void WebController::Setup()
 
         Serial.println("MDNS started");
     }
- 
+
     server->onNotFound(HandleNotFound);
 
     server->begin(); // Start server
@@ -141,7 +141,12 @@ void WebController::ProcessMainLoop()
     delay(2); // allow the cpu to switch to other tasks
 }
 
-void WebController::SendHttpResponse(const char *message)
+void WebController::SendHttpResponseOK(const char *message)
+{
+    server->send(200, "text/plain", message);
+}
+
+void WebController::SendHttpResponseBadRequest(const char *message)
 {
     server->send(200, "text/plain", message);
 }

@@ -37,7 +37,8 @@ public:
     static WebController *GetInstance();
     static void AddAction(const char *url, WebServer::THandlerFunction action);
     static UrlQueryParameter *GetUrlQueryParams();
-    void SendHttpResponse(const char *message);
+    void SendHttpResponseOK(const char *message);
+    void SendHttpResponseBadRequest(const char *message);
 
 private:
     WebController();

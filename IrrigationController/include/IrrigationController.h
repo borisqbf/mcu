@@ -21,6 +21,7 @@ enum State
 #define interruptValveOpenPin 22
 #define interruptValveClosedPin 23
 
+DefineCalendarType(WateringCalendar, 4);
 
 class IrrigationController
 {
@@ -37,10 +38,14 @@ public:
 
     static const char *GenerateStatusResponse();
 
+    //HTTP request handlers
     static void CloseValve();
     static void OpenValve();
     static void Reset();
     static void SetParams();
+    static void SetCalendar();
+    static void ClearCalendar();
+    static void GetStatus();
     static void WaterFlowTick();
 
 private:
@@ -50,7 +55,6 @@ private:
     static enum State currentState;
     static Chronos::DateTime stateChangedAt;
     const int maxValveActionTime = 20;
-    const int maxWateringTime = 60;       // minutes
     const int lowWaterFlowThreshold = 10; // l/min
     static bool flowTooLow;
     static float waterVolume;
@@ -58,7 +62,9 @@ private:
     static float waterVolumeTarget;
     static float waterFlowRate;
     static long pulseCounter;
+    static int maxWateringTime; // minutes
 
+    static WateringCalendar wateringCalendar;
 
     bool CheckStartTime();
     bool CheckEndTime();

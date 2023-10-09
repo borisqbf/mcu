@@ -12,6 +12,8 @@ float IrrigationController::waterVolumeTarget = 0.0;
 float IrrigationController::waterFlowRate = 0.0;
 long IrrigationController::pulseCounter = 0;
 bool IrrigationController::flowTooLow = false;
+int IrrigationController::maxWateringTime = 60; // minutes
+WateringCalendar IrrigationController::wateringCalendar;
 
 IrrigationController *IrrigationController::GetInstance()
 {
@@ -48,6 +50,9 @@ void IrrigationController::Setup()
     WebController::AddAction("/off", &IrrigationController::CloseValve);
     WebController::AddAction("/reset", &IrrigationController::Reset);
     WebController::AddAction("/set-params", &IrrigationController::SetParams);
+    WebController::AddAction("/set-calendar", &IrrigationController::SetCalendar);
+    WebController::AddAction("/clear-calendar", &IrrigationController::ClearCalendar);
+    WebController::AddAction("/status", &IrrigationController::GetStatus);
 }
 
 void IrrigationController::ProcesMainLoop()
@@ -160,23 +165,139 @@ void IrrigationController::SetParams()
 {
     WebController::UrlQueryParameter *params = WebController::GetUrlQueryParams();
     if (params == nullptr)
-        webController->SendHttpResponse("Missing Parameters\n\n");
+        webController->SendHttpResponseOK("Missing Parameters\n\n");
     else
     {
         WebController::UrlQueryParameter *paramsToDelete = params;
-        Serial.println("Query Params:");
+
         while ((*params).p != "")
         {
-            Serial.print((*params).p);
-            Serial.print(":");
-            Serial.println((*params).v);
-            
+            if ((*params).p.equalsIgnoreCase("target"))
+            {
+                waterVolumeTarget = (*params).v.toFloat();
+                if (waterVolumeTarget < 1)
+                {
+                    webController->SendHttpResponseBadRequest("target");
+                    break;
+                }
+            }
+            if ((*params).p.equalsIgnoreCase("duration"))
+            {
+                maxWateringTime = (*params).v.toInt();
+                if (maxWateringTime < 1)
+                {
+                    webController->SendHttpResponseBadRequest("duration");
+                    break;
+                }
+            }
+            else
+            {
+                Serial.print("Unsupported parameter ");
+                Serial.print((*params).p);
+                Serial.print(":");
+                Serial.println((*params).v);
+                webController->SendHttpResponseBadRequest((*params).p.c_str());
+            }
             params++;
         }
         delete[] paramsToDelete; // deallocate
         paramsToDelete = nullptr;
-        webController->SendHttpResponse("Configuration successful\n\n");
+        webController->SendHttpResponseOK("Configuration successful\n\n");
     }
+}
+
+void IrrigationController::SetCalendar()
+{
+    WebController::UrlQueryParameter *params = WebController::GetUrlQueryParams();
+    if (params == nullptr)
+        webController->SendHttpResponseOK("Missing Parameters\n\n");
+    else
+    {
+        WebController::UrlQueryParameter *paramsToDelete = params;
+        int freq = 2; // every second day
+        int minute = 0;
+        int hour = 22; // at 22:00
+
+        while ((*params).p != "")
+        {
+            if ((*params).p.equalsIgnoreCase("at"))
+            {
+                int columnIndex = (*params).v.indexOf(":");
+                if (columnIndex < 1)
+                {
+                    webController->SendHttpResponseBadRequest("at");
+                    break;
+                }
+
+                hour = (*params).v.substring(0, columnIndex).toInt();
+                minute = (*params).v.substring(columnIndex + 1).toInt();
+                if ((hour < 0) || (hour > 24) || (minute < 0) || (minute > 60))
+                {
+                    webController->SendHttpResponseBadRequest("at");
+                    break;
+                }
+            }
+            else if ((*params).p.equalsIgnoreCase("every"))
+            {
+                freq = (*params).v.toInt();
+                if ((freq < 1) || (freq > 3))
+                {
+                    webController->SendHttpResponseBadRequest("every");
+                    break;
+                }
+            }
+            else
+            {
+                Serial.print("Unsupported parameter ");
+                Serial.print((*params).p);
+                Serial.print(":");
+                Serial.println((*params).v);
+                webController->SendHttpResponseBadRequest((*params).p.c_str());
+            }
+            params++;
+        }
+
+        wateringCalendar.add(Chronos::Event(1,
+                                            Chronos::Mark::Daily(hour, minute),
+                                            Chronos::Span::Minutes(maxWateringTime)));
+        delete[] paramsToDelete; // deallocate
+        paramsToDelete = nullptr;
+        webController->SendHttpResponseOK("Configuration successful\n\n");
+    }
+}
+
+void IrrigationController::ClearCalendar()
+{
+    wateringCalendar.clear();
+    webController->SendHttpResponseOK("OK\n\n");
+}
+
+void IrrigationController::GetStatus()
+{
+    const byte nEvents = 3;
+    Chronos::Event::Occurrence eventArray[nEvents];
+
+    static char response[1024];
+    memset(response, '\0', 1024);
+    strcat(response, GenerateStatusResponse());
+    Chronos::DateTime n = Chronos::DateTime::now();
+
+    int nextEventsNumber = wateringCalendar.listNext(nEvents, eventArray, n);
+    if (nextEventsNumber == 0)
+    {
+        strcat(response, "No scheduled watering events found\n\n");
+    }
+    else
+    {
+        strcat(response, "Scheduled watering events:\n");
+        char eventInfo[50];
+        for (int i = 0; i < nextEventsNumber; i++)
+        {
+            snprintf(eventInfo, 50, "%02u/%02u/%u %02u:%02u\n", eventArray[i].start.day(), eventArray[i].start.month(), eventArray[i].start.year(), eventArray[i].start.hour(), eventArray[i].start.minute());
+            strcat(response, eventInfo);
+        }
+    }
+    webController->SendHttpResponseOK(response);
 }
 
 float IrrigationController::GetWaterFlow()
@@ -253,13 +374,13 @@ void IrrigationController::OpenValveInt()
 void IrrigationController::CloseValve()
 {
     CloseValveInt();
-    webController->SendHttpResponse(GenerateStatusResponse());
+    webController->SendHttpResponseOK(GenerateStatusResponse());
 }
 
 void IrrigationController::OpenValve()
 {
     OpenValveInt();
-    webController->SendHttpResponse(GenerateStatusResponse());
+    webController->SendHttpResponseOK(GenerateStatusResponse());
 }
 
 void IrrigationController::WaterFlowTick()
@@ -271,7 +392,7 @@ const char *IrrigationController::GenerateStatusResponse()
 {
     static char message[250];
     Chronos::DateTime n = Chronos::DateTime::now();
-    snprintf(message, 250, "Current time is %02u/%02u/%u %02u:%02u\nCurrent state is %s\nCurrent flow is %d\n\n", n.day(), n.month(), n.year(), n.hour(), n.minute(), GetCurrentState(), static_cast<int>(GetWaterFlow()));
+    snprintf(message, 250, "Current time is %02u/%02u/%u %02u:%02u\nCurrent state is %s\nCurrent flow is %d\nWatering target is %d liters\nMax watring duration is %d minutes\n", n.day(), n.month(), n.year(), n.hour(), n.minute(), GetCurrentState(), static_cast<int>(GetWaterFlow()), static_cast<int>(waterVolumeTarget), maxWateringTime);
     Serial.println(message);
     return message;
 }
