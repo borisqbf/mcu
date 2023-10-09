@@ -181,7 +181,7 @@ void IrrigationController::SetParams()
                     break;
                 }
             }
-            if ((*params).p.equalsIgnoreCase("duration"))
+            else if ((*params).p.equalsIgnoreCase("duration"))
             {
                 maxWateringTime = (*params).v.toInt();
                 if (maxWateringTime < 1)
@@ -262,7 +262,7 @@ void IrrigationController::SetCalendar()
                                             Chronos::Span::Minutes(maxWateringTime)));
         delete[] paramsToDelete; // deallocate
         paramsToDelete = nullptr;
-        webController->SendHttpResponseOK("Configuration successful\n\n");
+        webController->SendHttpResponseOK("Watering Schedule set\n\n");
     }
 }
 
@@ -392,7 +392,7 @@ const char *IrrigationController::GenerateStatusResponse()
 {
     static char message[250];
     Chronos::DateTime n = Chronos::DateTime::now();
-    snprintf(message, 250, "Current time is %02u/%02u/%u %02u:%02u\nCurrent state is %s\nCurrent flow is %d\nWatering target is %d liters\nMax watring duration is %d minutes\n", n.day(), n.month(), n.year(), n.hour(), n.minute(), GetCurrentState(), static_cast<int>(GetWaterFlow()), static_cast<int>(waterVolumeTarget), maxWateringTime);
+    snprintf(message, 250, "Current time is %02u/%02u/%u %02u:%02u\nCurrent state is %s\nCurrent flow is %d\nWatering target is %d liters\nMax watering duration is %d minutes\n", n.day(), n.month(), n.year(), n.hour(), n.minute(), GetCurrentState(), static_cast<int>(GetWaterFlow()), static_cast<int>(waterVolumeTarget), maxWateringTime);
     Serial.println(message);
     return message;
 }
