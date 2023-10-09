@@ -115,11 +115,11 @@ void GetLevelAbsolute()
   digitalWrite(led, 0);
 }
 
-unsigned int GetLidarDataFromI2C(const int addr)
+double GetLidarDataFromI2C(const int addr)
 {
   byte buff[2];
   byte i = 0;
-  unsigned int d; // current measurement
+  double d; // current measurement
 
   Wire.beginTransmission(addr);
   Wire.write(REG_00H);
@@ -161,7 +161,7 @@ void CalculatePercentage()
 
 bool IsGoodSample(double sample)
 {
-  if (distance <= (maxWaterColumnHeight - bottomDeadSpace))
+  if (sample <= (maxWaterColumnHeight - bottomDeadSpace))
     return true; // when just started any sample is a good one
   else
     return abs(distance - sample) < distance * 0.2; // 20%; Can't use stddev as the distribution is not guaranteed to be normal. E.g. empty tank would have stdev of 0.00
@@ -169,7 +169,7 @@ bool IsGoodSample(double sample)
 
 double CalculateDistance(double sample)
 {
-  return (sample + distance) / 2;
+  return (sample + distance) / 2.0;
 }
 
 void setup()
