@@ -18,8 +18,8 @@ enum State
 #define valveOpenPin 18
 #define valveClosePin 19
 
-#define interruptWaterFlowTickPin 24
-#define interruptValveOpenPin 2
+#define interruptWaterFlowTickPin 32
+#define interruptValveOpenPin 5
 #define interruptValveClosedPin 23
 
 DefineCalendarType(WateringCalendar, 4);
