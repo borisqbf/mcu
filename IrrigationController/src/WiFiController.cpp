@@ -49,6 +49,10 @@ void WiFiController::Setup()
     setSyncInterval(SECS_PER_HOUR); // every hour
 }
 
+void WiFiController::ProcessMainLoop()
+{
+}
+
 time_t WiFiController::GetNTPTime()
 {
     if (!IrrigationController::GetInstance()->IsIdle())

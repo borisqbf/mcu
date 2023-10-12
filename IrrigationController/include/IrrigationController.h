@@ -4,6 +4,7 @@
 #include <TimeLib.h>
 #include <Chronos.h>
 #include "WebController.h"
+#include "NotificationController.h"
 
 enum State
 {
@@ -17,8 +18,8 @@ enum State
 #define valveOpenPin 18
 #define valveClosePin 19
 
-#define interruptWaterFlowTickPin 21
-#define interruptValveOpenPin 22
+#define interruptWaterFlowTickPin 24
+#define interruptValveOpenPin 2
 #define interruptValveClosedPin 23
 
 DefineCalendarType(WateringCalendar, 4);
@@ -52,9 +53,10 @@ private:
     IrrigationController();
     static IrrigationController *theInstance;
     static WebController *webController;
+    static NotificationController *notificationController;
     static enum State currentState;
     static Chronos::DateTime stateChangedAt;
-    const int maxValveActionTime = 20;
+    const int maxValveActionTime = 20; //sec
     const int lowWaterFlowThreshold = 10; // l/min
     static bool flowTooLow;
     static float waterVolume;

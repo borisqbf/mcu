@@ -16,8 +16,9 @@
 class WiFiController
 {
 public:
-    void Setup();
     static WiFiController *GetInstance();
+    void Setup();
+    void ProcessMainLoop();
 
 private:
     WiFiController();

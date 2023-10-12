@@ -6,24 +6,26 @@
 
 #include "WiFiController.h"
 #include "WebController.h"
+#include "NotificationController.h"
 #include "IrrigationController.h"
 
 // Controllers
 IrrigationController *controller = NULL;
 WiFiController *wifi = NULL;
 WebController *web = NULL;
+NotificationController *notifications = NULL;
 
-void ValveOpen()
+IRAM_ATTR void ValveOpen()
 {
   controller->ValveOpen();
 }
 
-void ValveClosed()
+IRAM_ATTR void ValveClosed()
 {
   controller->ValveClosed();
 }
 
-void WaterFlowTick()
+IRAM_ATTR void WaterFlowTick()
 {
   controller->WaterFlowTick();
 }
@@ -47,6 +49,9 @@ void setup()
   web = WebController::GetInstance();
   web->Setup();
 
+  notifications = NotificationController::GetInstance();
+  notifications->Setup();
+
   controller = IrrigationController::GetInstance();
   controller->Setup();
 
@@ -54,11 +59,14 @@ void setup()
   attachInterrupt(digitalPinToInterrupt(interruptValveClosedPin), ValveClosed, FALLING);
   attachInterrupt(digitalPinToInterrupt(interruptWaterFlowTickPin), WaterFlowTick, FALLING);
 
-  web->Alert("Irrigation controller has started.");
+  notifications->Alert("Irrigation controller has started.");
+  notifications->Display("Ready.", "");
 }
 
 void loop()
 {
     controller->ProcesMainLoop(); // put your main code here, to run repeatedly:
+    wifi->ProcessMainLoop();
+    notifications->ProcessMainLoop();
     web->ProcessMainLoop();
 }

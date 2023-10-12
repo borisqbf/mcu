@@ -5,10 +5,19 @@
 // Static members
 WebController *WebController::theInstance = NULL;
 WebController::Route WebController::routes[MAX_ROUTES];
-Session_Config WebController::config;
-SMTPSession WebController::smtp;
 int WebController::nextRouteIndex = 1; // one for root
 WebServer *WebController::server = NULL;
+
+WebController::WebController()
+{
+    server = new WebServer(80);
+    routes[0] = {"/", &WebController::HandleRoot};
+    for (int i = 1; i < MAX_ROUTES; i++)
+    {
+        routes[i].url = nullptr;
+        routes[i].handler = nullptr;
+    }
+}
 
 WebController *WebController::GetInstance()
 {
@@ -109,17 +118,6 @@ WebController::UrlQueryParameter *WebController::GetUrlQueryParams()
     }
 }
 
-WebController::WebController()
-{
-    server = new WebServer(80);
-    routes[0] = {"/", &WebController::HandleRoot};
-    for (int i = 1; i < MAX_ROUTES; i++)
-    {
-        routes[i].url = nullptr;
-        routes[i].handler = nullptr;
-    }
-}
-
 void WebController::Setup()
 {
     if (MDNS.begin("irrigation-controller"))
@@ -132,7 +130,6 @@ void WebController::Setup()
 
     server->begin(); // Start server
     Serial.println("HTTP server started");
-    InitMailClient();
 }
 
 void WebController::ProcessMainLoop()
@@ -149,74 +146,4 @@ void WebController::SendHttpResponseOK(const char *message)
 void WebController::SendHttpResponseBadRequest(const char *message)
 {
     server->send(200, "text/plain", message);
-}
-
-void WebController::InitMailClient()
-{
-    MailClient.networkReconnect(true);
-    smtp.debug(1);
-
-    /* Set the callback function to get the sending results */
-    smtp.callback(SmtpCallback);
-
-    /* Set the session config */
-    config.server.host_name = SMTP_HOST;
-    config.server.port = SMTP_PORT;
-    config.login.email = AUTHOR_EMAIL;
-    config.login.password = AUTHOR_PASSWORD;
-    config.login.user_domain = F("127.0.0.1");
-
-    config.time.ntp_server = F("pool.ntp.org,time.nist.gov");
-    config.time.gmt_offset = 10;
-    config.time.day_light_offset = 0;
-}
-
-void WebController::SmtpCallback(SMTP_Status status)
-{
-    /* Print the sending result */
-    if (status.success())
-    {
-        smtp.sendingResult.clear();
-    }
-    else
-    {
-        Serial.println(status.info());
-    }
-}
-
-void WebController::Alert(const char *alert)
-{
-    /* Declare the message class */
-    SMTP_Message message;
-
-    /* Set the message headers */
-    message.sender.name = F("Irrigation Controller");
-    message.sender.email = AUTHOR_EMAIL;
-    message.subject = F("Alert");
-    message.addRecipient(F("Admin"), RECIPIENT_EMAIL);
-
-    message.text.content = F(alert);
-
-    /** The message priority
-     * esp_mail_smtp_priority_high or 1
-     * esp_mail_smtp_priority_normal or 3
-     * esp_mail_smtp_priority_low or 5
-     * The default value is esp_mail_smtp_priority_low
-     */
-    message.priority = esp_mail_smtp_priority::esp_mail_smtp_priority_normal;
-
-    /* Connect to the server */
-    if (!smtp.connect(&config))
-    {
-        MailClient.printf("Connection error, Status Code: %d, Error Code: %d, Reason: %s\n", smtp.statusCode(), smtp.errorCode(), smtp.errorReason().c_str());
-        return;
-    }
-
-    if (!smtp.isLoggedIn())
-    {
-        Serial.println("Error, Not yet logged in.");
-    }
-    /* Start sending Email and close the session */
-    if (!MailClient.sendMail(&smtp, &message))
-        MailClient.printf("Error, Status Code: %d, Error Code: %d, Reason: %s\n", smtp.statusCode(), smtp.errorCode(), smtp.errorReason().c_str());
 }

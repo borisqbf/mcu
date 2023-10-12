@@ -38,13 +38,10 @@ namespace Mark {
 
 Event * Daily::clone()  const
 {
-	return new Daily(hour, minute, sec);
-
+	return new Daily(hour, minute, sec, nDays);
 }
 DateTime Daily::applyTo(const DateTime & dt) const
 {
-
-
 	Chronos::TimeElements els(dt.asElements());
 
 	els.Hour = hour;
@@ -52,8 +49,6 @@ DateTime Daily::applyTo(const DateTime & dt) const
 	els.Second = sec;
 
 	return DateTime(els);
-
-
 }
 DateTime Daily::next(const DateTime & dt) const {
 
