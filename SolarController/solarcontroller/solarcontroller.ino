@@ -61,7 +61,6 @@ void ToggleMode()
 
 void ICACHE_RAM_ATTR IntCallback()
 {
-  long int m = millis();
   if (digitalRead(MANUAL_PIN))
   {
     if (millis() - lastPressed > 400)

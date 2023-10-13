@@ -19,7 +19,7 @@ internal class Program
         static async Task ProcessONWebRequestAsync(HttpClient client)
         {
             var resp = await client.GetStringAsync(
-              "http://192.168.0.54/ON");
+              "http://192.168.0.57/on");
 
             Console.Write(resp);
 
@@ -28,7 +28,7 @@ internal class Program
         static async Task ProcessOFFWebRequestAsync(HttpClient client)
         {
             var resp = await client.GetStringAsync(
-              "http://192.168.0.54/OFF");
+              "http://192.168.0.57/off");
 
             Console.Write(resp);
         }
