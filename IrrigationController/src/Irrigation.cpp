@@ -15,14 +15,21 @@ WiFiController *wifi = NULL;
 WebController *web = NULL;
 NotificationController *notifications = NULL;
 
+volatile bool valveOpen = false;
+volatile bool valveClosed = false;
+volatile long valveOpenChangedAt = 0;
+volatile long valveClosedChangedAt = 0;
+
 IRAM_ATTR void ValveOpen()
 {
-  controller->ValveOpen();
+  valveOpen = true;
+  valveOpenChangedAt = millis();
 }
 
 IRAM_ATTR void ValveClosed()
 {
-  controller->ValveClosed();
+  valveClosed = true;
+  valveClosedChangedAt = millis();
 }
 
 IRAM_ATTR void WaterFlowTick()
@@ -32,16 +39,15 @@ IRAM_ATTR void WaterFlowTick()
 
 void setup()
 {
-
   pinMode(valveOpenPin, OUTPUT);
   pinMode(valveClosePin, OUTPUT);
 
   pinMode(interruptWaterFlowTickPin, INPUT_PULLUP);
-  pinMode(interruptValveOpenPin, INPUT_PULLUP);
-  pinMode(interruptValveClosedPin, INPUT_PULLUP);
+  pinMode(interruptValveOpenPin, INPUT);
+  pinMode(interruptValveClosedPin, INPUT);
 
   Serial.begin(115200);
-  delay (500);
+  delay(500);
 
   wifi = WiFiController::GetInstance();
   wifi->Setup();
@@ -65,8 +71,20 @@ void setup()
 
 void loop()
 {
-    controller->ProcesMainLoop(); // put your main code here, to run repeatedly:
-    wifi->ProcessMainLoop();
-    notifications->ProcessMainLoop();
-    web->ProcessMainLoop();
+  if (valveClosed && ((millis() - valveClosedChangedAt) > 300) && (digitalRead(interruptValveClosedPin) == LOW))
+  {
+    valveClosed = false;
+    Serial.println("Int - closed");
+    controller->ValveClosed();
+  }
+  if (valveOpen && ((millis() - valveOpenChangedAt) > 300) && (digitalRead(interruptValveOpenPin) == LOW))
+  {
+    valveOpen = false;
+    Serial.println("Int - open");
+    controller->ValveOpen();
+  }
+  controller->ProcesMainLoop(); // put your main code here, to run repeatedly:
+  wifi->ProcessMainLoop();
+  notifications->ProcessMainLoop();
+  web->ProcessMainLoop();
 }
