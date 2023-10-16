@@ -15,6 +15,30 @@ long IrrigationController::pulseCounter = 0;
 bool IrrigationController::flowTooLow = false;
 int IrrigationController::maxWateringTime = 60; // minutes
 
+// Volatile non-member vars for ISRs
+
+volatile bool valveOpen = false;
+volatile bool valveClosed = false;
+volatile long valveOpenChangedAt = 0;
+volatile long valveClosedChangedAt = 0;
+
+IRAM_ATTR void ValveOpenISR()
+{
+    valveOpen = true;
+    valveOpenChangedAt = millis();
+}
+
+IRAM_ATTR void ValveClosedISR()
+{
+    valveClosed = true;
+    valveClosedChangedAt = millis();
+}
+
+IRAM_ATTR void WaterFlowTickISR()
+{
+    IrrigationController::GetInstance()->WaterFlowTick();
+}
+
 WateringCalendar IrrigationController::wateringCalendar;
 
 IrrigationController *IrrigationController::GetInstance()
@@ -42,7 +66,16 @@ IrrigationController::IrrigationController()
 
 void IrrigationController::Setup()
 {
-    if (digitalRead(interruptValveOpenPin) == LOW)
+    pinMode(valveOpenPin, OUTPUT);
+    pinMode(valveClosePin, OUTPUT);
+
+    pinMode(interruptWaterFlowTickPin, INPUT_PULLUP);
+    pinMode(interruptValveOpenPin, INPUT);
+    pinMode(interruptValveClosedPin, INPUT);
+
+    attachInterrupt(digitalPinToInterrupt(interruptWaterFlowTickPin), WaterFlowTickISR, FALLING);
+
+    if (digitalRead(interruptValveClosedPin) != LOW)
     {
         CloseValveInt();
         notificationController->Alert("Unexpected valve in Open state while powering up. Attempting to close.");
@@ -57,10 +90,27 @@ void IrrigationController::Setup()
     WebController::AddAction("/set-calendar", &IrrigationController::SetCalendar);
     WebController::AddAction("/clear-calendar", &IrrigationController::ClearCalendar);
     WebController::AddAction("/status", &IrrigationController::GetStatus);
+
+    notificationController->Alert("Irrigation controller has started.");
+    notificationController->Display("Ready.", "");
 }
 
 void IrrigationController::ProcesMainLoop()
 {
+    if (valveClosed && ((millis() - valveClosedChangedAt) > 300) && (digitalRead(interruptValveClosedPin) == LOW))
+    {
+        detachInterrupt(interruptValveClosedPin);
+        valveClosed = false;
+        Serial.println("Int - closed");
+        ValveClosed();
+    }
+    if (valveOpen && ((millis() - valveOpenChangedAt) > 300) && (digitalRead(interruptValveOpenPin) == LOW))
+    {
+        detachInterrupt(interruptValveOpenPin);
+        valveOpen = false;
+        Serial.println("Int - open");
+        ValveOpen();
+    }
     if (currentState == State::Idle)
     {
         if (CheckStartTime())
@@ -143,7 +193,7 @@ void IrrigationController::ProcesMainLoop()
     }
 }
 
-IRAM_ATTR void IrrigationController::ValveOpen()
+void IrrigationController::ValveOpen()
 {
     if (currentState == State::OpeningValve)
     {
@@ -157,7 +207,7 @@ IRAM_ATTR void IrrigationController::ValveOpen()
     }
 }
 
-IRAM_ATTR void IrrigationController::ValveClosed()
+void IrrigationController::ValveClosed()
 {
     if (currentState == State::ClosingValve)
     {
@@ -376,6 +426,8 @@ void IrrigationController::CloseValveInt()
     stateChangedAt = Chronos::DateTime::now();
     digitalWrite(valveOpenPin, LOW);
     digitalWrite(valveClosePin, HIGH);
+
+    attachInterrupt(digitalPinToInterrupt(interruptValveClosedPin), ValveClosedISR, FALLING);
 }
 
 void IrrigationController::OpenValveInt()
@@ -384,6 +436,8 @@ void IrrigationController::OpenValveInt()
     stateChangedAt = Chronos::DateTime::now();
     digitalWrite(valveOpenPin, HIGH);
     digitalWrite(valveClosePin, LOW);
+
+    attachInterrupt(digitalPinToInterrupt(interruptValveOpenPin), ValveOpenISR, FALLING);
 }
 
 void IrrigationController::CloseValve()
@@ -398,7 +452,7 @@ void IrrigationController::OpenValve()
     webController->SendHttpResponseOK(GenerateStatusResponse());
 }
 
-IRAM_ATTR void IrrigationController::WaterFlowTick()
+void IrrigationController::WaterFlowTick()
 {
     pulseCounter++;
 }
