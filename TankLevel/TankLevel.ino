@@ -11,7 +11,7 @@ const int led = 13;
 
 const int maxWaterColumnHeight = 215; // cm
 const int bottomDeadSpace = 20;       // cm
-const int topDeadSpace = 7;          // cm
+const int topDeadSpace = 6;          // cm
 
 const int TOF250address = 0x52;
 const int LCDaddress = 0x27;
