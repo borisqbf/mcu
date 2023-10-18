@@ -23,7 +23,7 @@ enum State
 #define interruptValveClosedPin 23
 
 #define humidityInputPin 36
-#define humidityPowerPin 34
+#define humidityPowerPin 26
 
 DefineCalendarType(WateringCalendar, 4);
 

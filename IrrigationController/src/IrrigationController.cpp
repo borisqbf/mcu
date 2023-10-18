@@ -377,7 +377,7 @@ void IrrigationController::GetSHumidity()
 {
     char resp[50];
     digitalWrite(humidityPowerPin, HIGH);
-    sleep(500);
+    delay(500);
     unsigned int humidity = analogRead(humidityInputPin);
     snprintf(resp, 50, "Humidity: %u\n\n", humidity);
     webController->SendHttpResponseOK(resp);
