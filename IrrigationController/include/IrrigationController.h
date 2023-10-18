@@ -22,6 +22,9 @@ enum State
 #define interruptValveOpenPin 5
 #define interruptValveClosedPin 23
 
+#define humidityInputPin 36
+#define humidityPowerPin 34
+
 DefineCalendarType(WateringCalendar, 4);
 
 class IrrigationController
@@ -48,6 +51,7 @@ public:
     static void ClearCalendar();
     static void GetStatus();
     static void WaterFlowTick();
+    static void GetSHumidity();
 
 private:
     IrrigationController();

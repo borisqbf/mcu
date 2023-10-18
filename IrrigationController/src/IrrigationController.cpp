@@ -73,6 +73,10 @@ void IrrigationController::Setup()
     pinMode(interruptValveOpenPin, INPUT);
     pinMode(interruptValveClosedPin, INPUT);
 
+    pinMode(humidityInputPin, INPUT);
+    pinMode(humidityPowerPin, OUTPUT);
+    digitalWrite(humidityPowerPin, LOW);
+
     attachInterrupt(digitalPinToInterrupt(interruptWaterFlowTickPin), WaterFlowTickISR, FALLING);
 
     if (digitalRead(interruptValveClosedPin) != LOW)
@@ -90,6 +94,7 @@ void IrrigationController::Setup()
     WebController::AddAction("/set-calendar", &IrrigationController::SetCalendar);
     WebController::AddAction("/clear-calendar", &IrrigationController::ClearCalendar);
     WebController::AddAction("/status", &IrrigationController::GetStatus);
+    WebController::AddAction("/humidity", &IrrigationController::GetSHumidity);
 
     notificationController->Alert("Irrigation controller has started.");
     notificationController->Display("Ready.", "");
@@ -198,7 +203,7 @@ void IrrigationController::ValveOpen()
     if (currentState == State::OpeningValve)
     {
         notificationController->Alert("Watering has started.");
-        notificationController->Display("Watering","has started.");
+        notificationController->Display("Watering", "has started.");
         currentState = State::Watering;
         stateChangedAt = Chronos::DateTime::now();
         digitalWrite(valveOpenPin, LOW);
@@ -320,9 +325,9 @@ void IrrigationController::SetCalendar()
             params++;
         }
 
-             wateringCalendar.add(Chronos::Event(1,
-                                                Chronos::Mark::Daily(hour, minute, 0, freq),
-                                                Chronos::Span::Minutes(1)));
+        wateringCalendar.add(Chronos::Event(1,
+                                            Chronos::Mark::Daily(hour, minute, 0, freq),
+                                            Chronos::Span::Minutes(1)));
         delete[] paramsToDelete; // deallocate
         paramsToDelete = nullptr;
         webController->SendHttpResponseOK("Watering Schedule set\n\n");
@@ -366,6 +371,18 @@ void IrrigationController::GetStatus()
 float IrrigationController::GetWaterFlow()
 {
     return waterFlowRate;
+}
+
+void IrrigationController::GetSHumidity()
+{
+    char resp[50];
+    digitalWrite(humidityPowerPin, HIGH);
+    sleep(500);
+    unsigned int humidity = analogRead(humidityInputPin);
+    snprintf(resp, 50, "Humidity: %u\n\n", humidity);
+    webController->SendHttpResponseOK(resp);
+
+    digitalWrite(humidityPowerPin, LOW);
 }
 
 const char *IrrigationController::GetCurrentState()
