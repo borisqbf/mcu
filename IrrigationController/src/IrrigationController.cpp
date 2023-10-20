@@ -158,7 +158,6 @@ void IrrigationController::ProcesMainLoop()
                 {
                     flowTooLow = true;
                     notificationController->Alert("Insufficient waterflow.");
-                    notificationController->Display("Insufficient", "waterflow.");
                 }
             }
             if (CheckForNormalWaterFlow())
@@ -167,9 +166,14 @@ void IrrigationController::ProcesMainLoop()
                 {
                     flowTooLow = false;
                     notificationController->Alert("Waterflow is back to normal.");
-                    notificationController->Display("Waterflow back", "to normal.");
                 }
             }
+
+            char msg1[20];
+            char msg2[20];
+            snprintf(msg1, 20, "Flow %d L/min", static_cast<int>(waterFlowRate));
+            snprintf(msg2, 20, "%d min", (Chronos::DateTime::now() - stateChangedAt).totalSeconds()/60);
+            notificationController->Display(msg1, msg2);
         }
     }
     else if (currentState == State::OpeningValve)
@@ -216,6 +220,7 @@ void IrrigationController::ValveClosed()
 {
     if (currentState == State::ClosingValve)
     {
+        notificationController->Display("Watering", "has ended.");
         currentState = State::Idle;
         stateChangedAt = Chronos::DateTime::now();
         digitalWrite(valveOpenPin, LOW);
