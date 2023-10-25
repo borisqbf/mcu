@@ -144,7 +144,8 @@ void IrrigationController::ProcesMainLoop()
             notificationController->Alert(message);
             notificationController->Display("Ready", "Aborted");
         }
-        if ((millis() - lastTimeVolumeMeasured) > 30000)
+        if (((millis() - lastTimeVolumeMeasured) > 30000) &&
+            ((Chronos::DateTime::now() - stateChangedAt) > Chronos::Span::Seconds(2 * maxValveActionTime)))
         {
             float frequency = (pulseCounter * 1000.0) / (millis() - lastTimeVolumeMeasured);
             waterFlowRate = frequency / 5.5; // liters per minute
@@ -172,7 +173,7 @@ void IrrigationController::ProcesMainLoop()
             char msg1[20];
             char msg2[20];
             snprintf(msg1, 20, "Flow %d L/min", static_cast<int>(waterFlowRate));
-            snprintf(msg2, 20, "%d min", (Chronos::DateTime::now() - stateChangedAt).totalSeconds()/60);
+            snprintf(msg2, 20, "%d min", (Chronos::DateTime::now() - stateChangedAt).totalSeconds() / 60);
             notificationController->Display(msg1, msg2);
         }
     }
