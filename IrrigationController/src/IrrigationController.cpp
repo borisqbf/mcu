@@ -222,6 +222,7 @@ void IrrigationController::ValveClosed()
     {
         notificationController->Display("Watering", "has ended.");
         currentState = State::Idle;
+        waterFlowRate = 0;
         stateChangedAt = Chronos::DateTime::now();
         digitalWrite(valveOpenPin, LOW);
         digitalWrite(valveClosePin, LOW);

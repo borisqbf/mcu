@@ -99,6 +99,8 @@ void WiFiController::PrintWifiStatus()
     IPAddress ip = WiFi.localIP();
     Serial.print("IP Address: ");
     Serial.println(ip);
+    NotificationController *n = NotificationController::GetInstance();
+    n->Display("IP Address", ip.toString().c_str());
 }
 
 
