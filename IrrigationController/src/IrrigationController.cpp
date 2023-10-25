@@ -73,7 +73,6 @@ void IrrigationController::Setup()
     pinMode(interruptValveOpenPin, INPUT);
     pinMode(interruptValveClosedPin, INPUT);
 
-    pinMode(humidityInputPin, INPUT);
     pinMode(humidityPowerPin, OUTPUT);
     digitalWrite(humidityPowerPin, LOW);
 
