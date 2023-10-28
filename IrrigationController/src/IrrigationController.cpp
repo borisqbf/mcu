@@ -14,6 +14,7 @@ float IrrigationController::waterFlowRate = 0.0;
 long IrrigationController::pulseCounter = 0;
 bool IrrigationController::flowTooLow = false;
 int IrrigationController::maxWateringTime = 60; // minutes
+WateringCalendar IrrigationController::wateringCalendar;
 
 // Volatile non-member vars for ISRs
 
@@ -38,8 +39,6 @@ IRAM_ATTR void WaterFlowTickISR()
 {
     IrrigationController::GetInstance()->WaterFlowTick();
 }
-
-WateringCalendar IrrigationController::wateringCalendar;
 
 IrrigationController *IrrigationController::GetInstance()
 {
@@ -97,6 +96,20 @@ void IrrigationController::Setup()
 
     notificationController->Alert("Irrigation controller has started.");
     notificationController->Display("Ready.", "");
+}
+
+void IrrigationController::InializeFlow()
+{
+    waterVolume = 0.0;
+    lastTimeVolumeMeasured = millis();
+    waterFlowRate = 0.0;
+    pulseCounter = 0;
+    flowTooLow = false;
+}
+
+void IrrigationController::WaterFlowTick()
+{
+    pulseCounter++;
 }
 
 void IrrigationController::ProcesMainLoop()
@@ -171,7 +184,7 @@ void IrrigationController::ProcesMainLoop()
 
             char msg1[20];
             char msg2[20];
-            snprintf(msg1, 20, "Flow %d L/min", static_cast<int>(waterFlowRate));
+            snprintf(msg1, 20, "F:%d T:%d", static_cast<int>(waterFlowRate), static_cast<int>(waterVolume));
             snprintf(msg2, 20, "%d min", (Chronos::DateTime::now() - stateChangedAt).totalSeconds() / 60);
             notificationController->Display(msg1, msg2);
         }
@@ -199,33 +212,6 @@ void IrrigationController::ProcesMainLoop()
             }
             currentState = State::Idle; // This is the best guess
         }
-    }
-}
-
-void IrrigationController::ValveOpen()
-{
-    if (currentState == State::OpeningValve)
-    {
-        notificationController->Alert("Watering has started.");
-        notificationController->Display("Watering", "has started.");
-        currentState = State::Watering;
-        stateChangedAt = Chronos::DateTime::now();
-        digitalWrite(valveOpenPin, LOW);
-        digitalWrite(valveClosePin, LOW);
-        InializeFlow();
-    }
-}
-
-void IrrigationController::ValveClosed()
-{
-    if (currentState == State::ClosingValve)
-    {
-        notificationController->Display("Watering", "has ended.");
-        currentState = State::Idle;
-        waterFlowRate = 0;
-        stateChangedAt = Chronos::DateTime::now();
-        digitalWrite(valveOpenPin, LOW);
-        digitalWrite(valveClosePin, LOW);
     }
 }
 
@@ -374,21 +360,34 @@ void IrrigationController::GetStatus()
     webController->SendHttpResponseOK(response);
 }
 
-float IrrigationController::GetWaterFlow()
-{
-    return waterFlowRate;
-}
-
 void IrrigationController::GetSHumidity()
 {
     char resp[50];
-    digitalWrite(humidityPowerPin, HIGH);
     delay(500);
     unsigned int humidity = analogRead(humidityInputPin);
     snprintf(resp, 50, "Humidity: %u\n\n", humidity);
     webController->SendHttpResponseOK(resp);
+}
 
-    digitalWrite(humidityPowerPin, LOW);
+void IrrigationController::CloseValve()
+{
+    CloseValveInt();
+    webController->SendHttpResponseOK(GenerateStatusResponse());
+}
+
+void IrrigationController::OpenValve()
+{
+    OpenValveInt();
+    webController->SendHttpResponseOK(GenerateStatusResponse());
+}
+
+const char *IrrigationController::GenerateStatusResponse()
+{
+    static char message[250];
+    Chronos::DateTime n = Chronos::DateTime::now();
+    snprintf(message, 250, "Current time is %02u/%02u/%u %02u:%02u\nCurrent state is %s\nCurrent flow is %d\nWatering target is %d liters\nMax watering duration is %d minutes\n", n.day(), n.month(), n.year(), n.hour(), n.minute(), GetCurrentState(), static_cast<int>(GetWaterFlow()), static_cast<int>(waterVolumeTarget), maxWateringTime);
+    Serial.println(message);
+    return message;
 }
 
 const char *IrrigationController::GetCurrentState()
@@ -406,6 +405,11 @@ const char *IrrigationController::GetCurrentState()
     default:
         return "Unknown";
     }
+}
+
+float IrrigationController::GetWaterFlow()
+{
+    return waterFlowRate;
 }
 
 bool IrrigationController::CheckStartTime()
@@ -440,9 +444,35 @@ bool IrrigationController::CheckForNormalWaterFlow()
 
 bool IrrigationController::CheckWateringTarget()
 {
-    return false;
+    return waterVolumeTarget <= waterVolume;
 }
 
+void IrrigationController::ValveOpen()
+{
+    if (currentState == State::OpeningValve)
+    {
+        notificationController->Alert("Watering has started.");
+        notificationController->Display("Watering", "has started.");
+        currentState = State::Watering;
+        stateChangedAt = Chronos::DateTime::now();
+        digitalWrite(valveOpenPin, LOW);
+        digitalWrite(valveClosePin, LOW);
+        InializeFlow();
+    }
+}
+
+void IrrigationController::ValveClosed()
+{
+    if (currentState == State::ClosingValve)
+    {
+        notificationController->Display("Watering", "has ended.");
+        currentState = State::Idle;
+        waterFlowRate = 0;
+        stateChangedAt = Chronos::DateTime::now();
+        digitalWrite(valveOpenPin, LOW);
+        digitalWrite(valveClosePin, LOW);
+    }
+}
 void IrrigationController::CloseValveInt()
 {
     currentState = State::ClosingValve;
@@ -461,39 +491,4 @@ void IrrigationController::OpenValveInt()
     digitalWrite(valveClosePin, LOW);
 
     attachInterrupt(digitalPinToInterrupt(interruptValveOpenPin), ValveOpenISR, FALLING);
-}
-
-void IrrigationController::CloseValve()
-{
-    CloseValveInt();
-    webController->SendHttpResponseOK(GenerateStatusResponse());
-}
-
-void IrrigationController::OpenValve()
-{
-    OpenValveInt();
-    webController->SendHttpResponseOK(GenerateStatusResponse());
-}
-
-void IrrigationController::WaterFlowTick()
-{
-    pulseCounter++;
-}
-
-const char *IrrigationController::GenerateStatusResponse()
-{
-    static char message[250];
-    Chronos::DateTime n = Chronos::DateTime::now();
-    snprintf(message, 250, "Current time is %02u/%02u/%u %02u:%02u\nCurrent state is %s\nCurrent flow is %d\nWatering target is %d liters\nMax watering duration is %d minutes\n", n.day(), n.month(), n.year(), n.hour(), n.minute(), GetCurrentState(), static_cast<int>(GetWaterFlow()), static_cast<int>(waterVolumeTarget), maxWateringTime);
-    Serial.println(message);
-    return message;
-}
-
-void IrrigationController::InializeFlow()
-{
-    waterVolume = 0.0;
-    lastTimeVolumeMeasured = millis();
-    waterFlowRate = 0.0;
-    pulseCounter = 0;
-    flowTooLow = false;
 }

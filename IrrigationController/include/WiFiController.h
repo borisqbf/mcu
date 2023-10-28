@@ -8,8 +8,8 @@
 #include <TimeLib.h>
 #include <Timezone.h>
 
-#define timeServer "time.google.com"
-#define UDP_TIMEOUT 2000
+#define timeServer "au.pool.ntp.org"
+#define UDP_TIMEOUT 20000
 #define NTP_PACKET_SIZE 48
 #define timeZone 10
 
