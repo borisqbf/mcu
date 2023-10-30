@@ -67,6 +67,7 @@ IrrigationController::IrrigationController()
 
 void IrrigationController::Setup()
 {
+    startTime = DateTime(2200, 1, 1); // in a distant future
     pinMode(valveOpenPin, OUTPUT);
     pinMode(valveClosePin, OUTPUT);
 
@@ -338,7 +339,6 @@ void IrrigationController::GetStatus()
     static char response[512];
     memset(response, '\0', 512);
     strcat(response, GenerateStatusResponse());
-    DateTime n(now());
 
     if (startTime >= DateTime(2200, 1, 1))
     {
