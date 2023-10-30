@@ -58,7 +58,6 @@ IrrigationController *IrrigationController::GetInstance()
 
 IrrigationController::IrrigationController()
 {
-    startTime = DateTime(2200, 1, 1); // in a distant future
     webController = WebController::GetInstance();
     notificationController = NotificationController::GetInstance();
     digitalWrite(valveOpenPin, LOW);
@@ -67,7 +66,7 @@ IrrigationController::IrrigationController()
 
 void IrrigationController::Setup()
 {
-    startTime = DateTime(2200, 1, 1); // in a distant future
+    startTime = DateTime(2099, 12, 12); // in a distant future
     pinMode(valveOpenPin, OUTPUT);
     pinMode(valveClosePin, OUTPUT);
 
@@ -330,7 +329,7 @@ void IrrigationController::SetCalendar()
 
 void IrrigationController::ClearCalendar()
 {
-    startTime = DateTime(2200, 1, 1); // in a distant future
+    startTime = DateTime(2099, 12, 12); // in a distant future
     webController->SendHttpResponseOK("OK\n\n");
 }
 
@@ -340,7 +339,7 @@ void IrrigationController::GetStatus()
     memset(response, '\0', 512);
     strcat(response, GenerateStatusResponse());
 
-    if (startTime >= DateTime(2200, 1, 1))
+    if (startTime >= DateTime(2099, 12, 12))
     {
         strcat(response, "No scheduled watering events found\n\n");
     }
@@ -413,7 +412,8 @@ float IrrigationController::GetWaterFlow()
 
 bool IrrigationController::CheckStartTime()
 {
-    return startTime > DateTime(now());
+    DateTime n(now());
+    return (n > startTime) && (startTime > n - TimeSpan(maxWateringTime * 60 * 2));
 }
 
 void IrrigationController::SetNextStartTime()
