@@ -2,7 +2,7 @@
 #define IRRIGATIONCONTROLLER_H
 
 #include <TimeLib.h>
-#include <Chronos.h>
+#include "DateTimeLib.h"
 #include "WebController.h"
 #include "NotificationController.h"
 
@@ -25,7 +25,6 @@ enum State
 #define humidityInputPin 36
 #define humidityPowerPin 26
 
-DefineCalendarType(WateringCalendar, 4);
 
 class IrrigationController
 {
@@ -59,7 +58,8 @@ private:
     static WebController *webController;
     static NotificationController *notificationController;
     static enum State currentState;
-    static Chronos::DateTime stateChangedAt;
+    static DateTime stateChangedAt;
+    static DateTime startTime;
     const int maxValveActionTime = 30; //sec
     const int lowWaterFlowThreshold = 15; // l/min
     static bool flowTooLow;
@@ -69,10 +69,10 @@ private:
     static float waterFlowRate;
     static long pulseCounter;
     static int maxWateringTime; // minutes
-
-    static WateringCalendar wateringCalendar;
-
+    static int wateringFrequency;
     bool CheckStartTime();
+    void SetNextStartTime();
+    static void SetNextStartTime(int hour, int mm);
     bool CheckEndTime();
     bool CheckForLowWaterFlow();
     bool CheckForNormalWaterFlow();

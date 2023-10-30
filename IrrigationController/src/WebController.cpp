@@ -1,6 +1,8 @@
 #include <ESPmDNS.h>
-#include <Chronos.h>
+#include <TimeLib.h>
+#include "DateTimeLib.h"
 #include "WebController.h"
+
 
 // Static members
 WebController *WebController::theInstance = NULL;
@@ -72,7 +74,7 @@ void WebController::HandleNotFound()
         message += "\n";
     }
 
-    Chronos::DateTime n = Chronos::DateTime::now();
+    DateTime n(now());
     message += "Current time is ";
     message += n.day();
     message += "/";

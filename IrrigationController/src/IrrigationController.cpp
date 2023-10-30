@@ -5,7 +5,8 @@ IrrigationController *IrrigationController::theInstance = NULL;
 enum State IrrigationController::currentState = State::Idle;
 WebController *IrrigationController::webController = NULL;
 NotificationController *IrrigationController::notificationController = NULL;
-Chronos::DateTime IrrigationController::stateChangedAt;
+DateTime IrrigationController::stateChangedAt;
+DateTime IrrigationController::startTime;
 
 float IrrigationController::waterVolume = 0.0;
 long IrrigationController::lastTimeVolumeMeasured = 0;
@@ -13,8 +14,8 @@ float IrrigationController::waterVolumeTarget = 100.0;
 float IrrigationController::waterFlowRate = 0.0;
 long IrrigationController::pulseCounter = 0;
 bool IrrigationController::flowTooLow = false;
-int IrrigationController::maxWateringTime = 60; // minutes
-WateringCalendar IrrigationController::wateringCalendar;
+int IrrigationController::maxWateringTime = 60;  // minutes
+int IrrigationController::wateringFrequency = 2; // every two days by default
 
 // Volatile non-member vars for ISRs
 
@@ -57,6 +58,7 @@ IrrigationController *IrrigationController::GetInstance()
 
 IrrigationController::IrrigationController()
 {
+    startTime = DateTime(2200, 1, 1); // in a distant future
     webController = WebController::GetInstance();
     notificationController = NotificationController::GetInstance();
     digitalWrite(valveOpenPin, LOW);
@@ -132,6 +134,7 @@ void IrrigationController::ProcesMainLoop()
     {
         if (CheckStartTime())
         {
+            SetNextStartTime();
             OpenValveInt();
         }
     }
@@ -140,24 +143,24 @@ void IrrigationController::ProcesMainLoop()
         static char message[150];
         if (CheckWateringTarget())
         {
-            Chronos::DateTime n = Chronos::DateTime::now();
-            Chronos::Span::Absolute duration = n - stateChangedAt;
+            DateTime n(now());
+            TimeSpan duration = n - stateChangedAt;
             CloseValveInt();
 
-            snprintf(message, 150, "Watering finished at %02d/%02d/%d %02d:%02d.  Watering target of %d liters has been reached. The process took %d minutes.", n.day(), n.month(), n.year(), n.hour(), n.minute(), static_cast<int>(waterVolumeTarget), duration.minutes());
+            snprintf(message, 150, "Watering finished at %02d/%02d/%d %02d:%02d.  Watering target of %d liters has been reached. The process took %d minutes.", n.day(), n.month(), n.year(), n.hour(), n.minute(), static_cast<int>(waterVolumeTarget), duration.totalseconds() / 60);
             notificationController->Alert(message);
             notificationController->Display("Ready", "Finished");
         }
         else if (CheckEndTime())
         {
-            Chronos::DateTime n = Chronos::DateTime::now();
+            DateTime n(now());
             CloseValveInt();
             snprintf(message, 150, "Watering aborted at %02d/%02d/%d %02d:%02d after %d minutes. Watering target of %d liters has not been reached. %d liters have been dispensed", n.day(), n.month(), n.year(), n.hour(), n.minute(), maxWateringTime, static_cast<int>(waterVolumeTarget), static_cast<int>(waterVolume));
             notificationController->Alert(message);
             notificationController->Display("Ready", "Aborted");
         }
         if (((millis() - lastTimeVolumeMeasured) > 30000) &&
-            ((Chronos::DateTime::now() - stateChangedAt) > Chronos::Span::Seconds(2 * maxValveActionTime)))
+            ((DateTime(now()) - stateChangedAt).totalseconds() > 2 * maxValveActionTime))
         {
             float frequency = (pulseCounter * 1000.0) / (millis() - lastTimeVolumeMeasured);
             waterFlowRate = frequency / 5.5; // liters per minute
@@ -185,13 +188,13 @@ void IrrigationController::ProcesMainLoop()
             char msg1[20];
             char msg2[20];
             snprintf(msg1, 20, "Flow %d Tot. %d", static_cast<int>(waterFlowRate), static_cast<int>(waterVolume));
-            snprintf(msg2, 20, "%d min", (Chronos::DateTime::now() - stateChangedAt).totalSeconds() / 60);
+            snprintf(msg2, 20, "%d min", ((DateTime(now()) - stateChangedAt).totalseconds() / 60));
             notificationController->Display(msg1, msg2);
         }
     }
     else if (currentState == State::OpeningValve)
     {
-        if ((Chronos::DateTime::now() - stateChangedAt) > Chronos::Span::Seconds(maxValveActionTime))
+        if ((DateTime(now()) - stateChangedAt).totalseconds() > maxValveActionTime)
         {
             if (digitalRead(interruptValveOpenPin) != LOW)
             {
@@ -203,7 +206,7 @@ void IrrigationController::ProcesMainLoop()
     }
     else if (currentState == State::ClosingValve)
     {
-        if ((Chronos::DateTime::now() - stateChangedAt) > Chronos::Span::Seconds(maxValveActionTime))
+        if ((DateTime(now()) - stateChangedAt).totalseconds() > maxValveActionTime)
         {
             if (digitalRead(interruptValveClosedPin) != LOW)
             {
@@ -274,8 +277,7 @@ void IrrigationController::SetCalendar()
     else
     {
         WebController::UrlQueryParameter *paramsToDelete = params;
-        int freq = 2; // every second day
-        int minute = 0;
+        int mins = 0;
         int hour = 22; // at 22:00
 
         while ((*params).p != "")
@@ -290,8 +292,8 @@ void IrrigationController::SetCalendar()
                 }
 
                 hour = (*params).v.substring(0, columnIndex).toInt();
-                minute = (*params).v.substring(columnIndex + 1).toInt();
-                if ((hour < 0) || (hour > 24) || (minute < 0) || (minute > 60))
+                mins = (*params).v.substring(columnIndex + 1).toInt();
+                if ((hour < 0) || (hour > 24) || (mins < 0) || (mins > 60))
                 {
                     webController->SendHttpResponseBadRequest("at");
                     break;
@@ -299,8 +301,8 @@ void IrrigationController::SetCalendar()
             }
             else if ((*params).p.equalsIgnoreCase("every"))
             {
-                freq = (*params).v.toInt();
-                if ((freq < 1) || (freq > 3))
+                wateringFrequency = (*params).v.toInt();
+                if ((wateringFrequency < 1) || (wateringFrequency > 3))
                 {
                     webController->SendHttpResponseBadRequest("every");
                     break;
@@ -317,9 +319,8 @@ void IrrigationController::SetCalendar()
             params++;
         }
 
-        wateringCalendar.add(Chronos::Event(1,
-                                            Chronos::Mark::Daily(hour, minute, 0, freq),
-                                            Chronos::Span::Minutes(1)));
+        IrrigationController::SetNextStartTime(hour, mins);
+
         delete[] paramsToDelete; // deallocate
         paramsToDelete = nullptr;
         webController->SendHttpResponseOK("Watering Schedule set\n\n");
@@ -328,34 +329,26 @@ void IrrigationController::SetCalendar()
 
 void IrrigationController::ClearCalendar()
 {
-    wateringCalendar.clear();
+    startTime = DateTime(2200, 1, 1); // in a distant future
     webController->SendHttpResponseOK("OK\n\n");
 }
 
 void IrrigationController::GetStatus()
 {
-    const byte nEvents = 3;
-    Chronos::Event::Occurrence eventArray[nEvents];
-
     static char response[512];
     memset(response, '\0', 512);
     strcat(response, GenerateStatusResponse());
-    Chronos::DateTime n = Chronos::DateTime::now();
+    DateTime n(now());
 
-    int nextEventsNumber = wateringCalendar.listNext(nEvents, eventArray, n);
-    if (nextEventsNumber == 0)
+    if (startTime >= DateTime(2200, 1, 1))
     {
         strcat(response, "No scheduled watering events found\n\n");
     }
     else
     {
-        strcat(response, "Scheduled watering events:\n");
-        char eventInfo[50];
-        for (int i = 0; i < nextEventsNumber; i++)
-        {
-            snprintf(eventInfo, 50, "%02u/%02u/%u %02u:%02u\n", eventArray[i].start.day(), eventArray[i].start.month(), eventArray[i].start.year(), eventArray[i].start.hour(), eventArray[i].start.minute());
-            strcat(response, eventInfo);
-        }
+        char eventInfo[] = "Next scheduled watering event: hh:mmAP on DD MMM YY\n\n";
+
+        strcat(response, startTime.toString(eventInfo));
     }
     webController->SendHttpResponseOK(response);
 }
@@ -390,7 +383,7 @@ void IrrigationController::OpenValve()
 const char *IrrigationController::GenerateStatusResponse()
 {
     static char message[250];
-    Chronos::DateTime n = Chronos::DateTime::now();
+    DateTime n(now());
     snprintf(message, 250, "Current time is %02u/%02u/%u %02u:%02u\nCurrent state is %s\nCurrent flow is %d\nWatering target is %d liters\nMax watering duration is %d minutes\n", n.day(), n.month(), n.year(), n.hour(), n.minute(), GetCurrentState(), static_cast<int>(GetWaterFlow()), static_cast<int>(waterVolumeTarget), maxWateringTime);
     Serial.println(message);
     return message;
@@ -420,12 +413,22 @@ float IrrigationController::GetWaterFlow()
 
 bool IrrigationController::CheckStartTime()
 {
-    const byte nEvents = 1;
-    Chronos::Event::Occurrence eventArray[nEvents];
+    return startTime > DateTime(now());
+}
 
-    Chronos::DateTime n = Chronos::DateTime::now();
+void IrrigationController::SetNextStartTime()
+{
+    startTime = startTime + TimeSpan(wateringFrequency, 0, 0, 0);
+}
 
-    return (wateringCalendar.listOngoing(nEvents, eventArray, n) > 0);
+void IrrigationController::SetNextStartTime(int hour, int minute)
+{
+    DateTime n(now());
+    startTime = DateTime(n.year(), n.month(), n.day(), hour, minute);
+    if (startTime < n)
+    {
+        startTime = startTime + TimeSpan(1, 0, 0, 0);
+    }
 }
 
 bool IrrigationController::CheckEndTime()
@@ -434,7 +437,7 @@ bool IrrigationController::CheckEndTime()
         return false;
     else
     {
-        return ((Chronos::DateTime::now() - stateChangedAt) > Chronos::Span::Minutes(maxWateringTime));
+        return ((DateTime(now()) - stateChangedAt).totalseconds() > maxWateringTime * 60);
     }
 }
 
@@ -460,7 +463,7 @@ void IrrigationController::ValveOpen()
         notificationController->Alert("Watering has started.");
         notificationController->Display("Watering", "has started.");
         currentState = State::Watering;
-        stateChangedAt = Chronos::DateTime::now();
+        stateChangedAt = DateTime(now());
         digitalWrite(valveOpenPin, LOW);
         digitalWrite(valveClosePin, LOW);
         InializeFlow();
@@ -474,7 +477,7 @@ void IrrigationController::ValveClosed()
         notificationController->Display("Watering", "has ended.");
         currentState = State::Idle;
         waterFlowRate = 0;
-        stateChangedAt = Chronos::DateTime::now();
+        stateChangedAt = DateTime(now());
         digitalWrite(valveOpenPin, LOW);
         digitalWrite(valveClosePin, LOW);
     }
@@ -482,7 +485,7 @@ void IrrigationController::ValveClosed()
 void IrrigationController::CloseValveInt()
 {
     currentState = State::ClosingValve;
-    stateChangedAt = Chronos::DateTime::now();
+    stateChangedAt = DateTime(now());
     digitalWrite(valveOpenPin, LOW);
     digitalWrite(valveClosePin, HIGH);
 
@@ -492,7 +495,7 @@ void IrrigationController::CloseValveInt()
 void IrrigationController::OpenValveInt()
 {
     currentState = State::OpeningValve;
-    stateChangedAt = Chronos::DateTime::now();
+    stateChangedAt = DateTime(now());
     digitalWrite(valveOpenPin, HIGH);
     digitalWrite(valveClosePin, LOW);
 
