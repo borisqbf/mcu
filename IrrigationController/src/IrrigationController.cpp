@@ -184,7 +184,7 @@ void IrrigationController::ProcesMainLoop()
 
             char msg1[20];
             char msg2[20];
-            snprintf(msg1, 20, "F:%d T:%d", static_cast<int>(waterFlowRate), static_cast<int>(waterVolume));
+            snprintf(msg1, 20, "Flow %d Tot. %d", static_cast<int>(waterFlowRate), static_cast<int>(waterVolume));
             snprintf(msg2, 20, "%d min", (Chronos::DateTime::now() - stateChangedAt).totalSeconds() / 60);
             notificationController->Display(msg1, msg2);
         }
@@ -363,9 +363,15 @@ void IrrigationController::GetStatus()
 void IrrigationController::GetSHumidity()
 {
     char resp[50];
-    delay(500);
-    unsigned int humidity = analogRead(humidityInputPin);
-    snprintf(resp, 50, "Humidity: %u\n\n", humidity);
+
+    int h = 0;
+
+    for (int i = 0; i < 100; i++)
+    {
+        h += analogRead(humidityInputPin);
+        delay(10);
+    }
+    snprintf(resp, 50, "Humidity: %d\n\n", h / 100);
     webController->SendHttpResponseOK(resp);
 }
 

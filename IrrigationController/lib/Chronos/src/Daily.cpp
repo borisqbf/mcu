@@ -8,72 +8,75 @@
  *      Author: Pat Deegan
  *      Part of the Chronos library project
  *      Copyright (C) 2015 Pat Deegan, http://psychogenic.com
- * 
+ *
  *  This file is part of the Chronos embedded datetime/calendar library.
- * 
+ *
  *     Chronos is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU Lesser Public License as published by
  *     the Free Software Foundation, either version 3 of the License, or
  *     (at your option) any later version.
- * 
+ *
  *     Chronos is distributed in the hope that it will be useful,
  *     but WITHOUT ANY WARRANTY; without even the implied warranty of
  *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *     GNU Lesser Public License for more details.
- * 
+ *
  *    You should have received a copy of the GNU Lesser Public License
  *    along with Chronos.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include "chronosinc/Delta.h"
 #include "chronosinc/marks/Daily.h"
-namespace Chronos {
-namespace Mark {
-
-	Daily::Daily(Hours h, Minutes m, Seconds s, int n) : Event(),
-															 hour(h), minute(m), sec(s), nDays(n)
+namespace Chronos
+{
+	namespace Mark
 	{
 
-}
+		Daily::Daily(Hours h, Minutes m, Seconds s, int n) : Event(),
+															 hour(h), minute(m), sec(s), nDays(n)
+		{
+		}
 
-Event * Daily::clone()  const
-{
-	return new Daily(hour, minute, sec, nDays);
-}
-DateTime Daily::applyTo(const DateTime & dt) const
-{
-	Chronos::TimeElements els(dt.asElements());
+		Event *Daily::clone() const
+		{
+			return new Daily(hour, minute, sec, nDays);
+		}
 
-	els.Hour = hour;
-	els.Minute = minute;
-	els.Second = sec;
+		DateTime Daily::applyTo(const DateTime &dt) const
+		{
+			Chronos::TimeElements els(dt.asElements());
 
-	return DateTime(els);
-}
-DateTime Daily::next(const DateTime & dt) const {
+			els.Hour = hour;
+			els.Minute = minute;
+			els.Second = sec;
 
-	DateTime theNext(applyTo(dt));
+			return DateTime(els);
+		}
 
-	if (theNext > dt)
-		return theNext;
+		DateTime Daily::next(const DateTime &dt) const
+		{
 
-	theNext += Span::Days(nDays);
+			DateTime theNext(applyTo(dt));
 
-	return theNext;
+			if ((theNext > dt) && (nDays == 1))
+				return theNext;
 
-}
+			theNext += Span::Days(nDays);
 
-DateTime Daily::previous(const DateTime & dt)  const {
+			return theNext;
+		}
 
+		DateTime Daily::previous(const DateTime &dt) const
+		{
 
-	DateTime thePrev(applyTo(dt));
+			DateTime thePrev(applyTo(dt));
 
-	if (thePrev < dt)
-		return thePrev;
+			if ((theNext < dt) && (nDays == 1))
+				return thePrev;
 
-	thePrev -= Span::Days(nDays);
-	return thePrev;
-}
+			thePrev -= Span::Days(nDays);
+			return thePrev;
+		}
 
-} /* namespace Event */
+	} /* namespace Event */
 } /* namespace Chronos */

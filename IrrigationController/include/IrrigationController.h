@@ -61,7 +61,7 @@ private:
     static enum State currentState;
     static Chronos::DateTime stateChangedAt;
     const int maxValveActionTime = 30; //sec
-    const int lowWaterFlowThreshold = 10; // l/min
+    const int lowWaterFlowThreshold = 15; // l/min
     static bool flowTooLow;
     static float waterVolume;
     static long lastTimeVolumeMeasured;

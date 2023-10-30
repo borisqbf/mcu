@@ -83,8 +83,8 @@ DateTime Weekly::previous(const DateTime & dt) const {
 	DateTime thePrev(applyTo(dt, Previous));
 
 	// the next now has correct time and day, but may
-	// not actually be in the future yet
-	// continue adding 1 week until it is actually in the future:
+	// not actually be in the past yet
+	// continue adding 1 week until it is actually in the past:
 	while (thePrev >= dt) {
 		thePrev -= Span::Weeks(1);
 	}
