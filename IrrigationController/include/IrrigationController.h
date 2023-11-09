@@ -14,6 +14,14 @@ enum State
     ClosingValve
 };
 
+enum SkipReason
+{
+    None = 0,
+    RainBefore,
+    RainForecast,
+    SoilHumidity
+};
+
 // Pins
 #define valveOpenPin 18
 #define valveClosePin 19
@@ -24,7 +32,6 @@ enum State
 
 #define humidityInputPin 36
 #define humidityPowerPin 26
-
 
 class IrrigationController
 {
@@ -41,7 +48,7 @@ public:
 
     static const char *GenerateStatusResponse();
 
-    //HTTP request handlers
+    // HTTP request handlers
     static void CloseValve();
     static void OpenValve();
     static void Reset();
@@ -50,7 +57,7 @@ public:
     static void ClearCalendar();
     static void GetStatus();
     static void WaterFlowTick();
-    static void GetSHumidity();
+    static void GetHumidity();
 
 private:
     IrrigationController();
@@ -60,7 +67,7 @@ private:
     static enum State currentState;
     static DateTime stateChangedAt;
     static DateTime startTime;
-    const int maxValveActionTime = 30; //sec
+    const int maxValveActionTime = 30;    // sec
     const int lowWaterFlowThreshold = 15; // l/min
     static bool flowTooLow;
     static float waterVolume;
@@ -70,14 +77,24 @@ private:
     static long pulseCounter;
     static int maxWateringTime; // minutes
     static int wateringFrequency;
+    static int waterTankLevel;
     bool CheckStartTime();
     void SetNextStartTime();
+    static void SkipToNext();
+    static void SkipDay();
     static void SetNextStartTime(int hour, int mm);
     bool CheckEndTime();
     bool CheckForLowWaterFlow();
     bool CheckForNormalWaterFlow();
     bool CheckWateringTarget();
-    static void CloseValveInt();
+
+    static int GetHumidityImp();
+    static int GetWaterTankLevel();
+    SkipReason WateringRequired(int newWaterTankLevel, float rainForecast);
+    const char *GetSkipReasonDescription(SkipReason reason);
+
+    static void
+    CloseValveInt();
     static void OpenValveInt();
     static void InializeFlow();
 };

@@ -1,5 +1,7 @@
 #include <ESPmDNS.h>
 #include <TimeLib.h>
+#include <HTTPClient.h>
+#include <ArduinoJson.h>
 #include "DateTimeLib.h"
 #include "WebController.h"
 
@@ -148,4 +150,82 @@ void WebController::SendHttpResponseOK(const char *message)
 void WebController::SendHttpResponseBadRequest(const char *message)
 {
     server->send(200, "text/plain", message);
+}
+
+int WebController::GetWaterTankLevel()
+{
+    HTTPClient http;
+    http.begin(TANK_LEVEL_URL); // HTTP
+    int retVal = -1;
+    int httpCode = http.GET();
+
+    if (httpCode > 0)
+    {
+        // file found at server
+        if (httpCode == HTTP_CODE_OK)
+        {
+            String payload = http.getString();
+            Serial.println(payload);
+            retVal = payload.toInt();
+            if (retVal == 0)
+                retVal = -1;
+        }
+        else
+        {
+            // HTTP header has been send and Server response header has been handled
+            Serial.printf("[HTTP] GET from %s code: %d\n", TANK_LEVEL_URL, httpCode);
+        }
+    }
+    else
+    {
+        Serial.printf("[HTTP] GET from %s failed, error: %s\n", TANK_LEVEL_URL, http.errorToString(httpCode).c_str());
+    }
+
+    http.end();
+    return retVal;
+}
+
+float WebController::GetRainForecast()
+{
+    HTTPClient http;
+    http.begin(WEATHER_FORECAST_URL); // HTTP
+    float retVal = 0;
+    int httpCode = http.GET();
+
+    if (httpCode > 0)
+    {
+        // file found at server
+        if (httpCode == HTTP_CODE_OK)
+        {
+            String payload = http.getString();
+            StaticJsonDocument<0> filter;
+            filter.set(true);
+
+            DynamicJsonDocument doc(24576);
+
+            DeserializationError error = deserializeJson(doc, payload, DeserializationOption::Filter(filter));
+
+            if (error)
+            {
+                Serial.print("deserializeJson() failed: ");
+                Serial.println(error.c_str());
+                return 0;
+            }
+
+            JsonObject forecast = doc["forecast"]["forecastday"][0];
+            retVal = forecast["totalprecip_mm"];
+        }
+        else
+        {
+            // HTTP header has been send and Server response header has been handled
+            Serial.printf("[HTTP] GET from %s code: %d\n", WEATHER_FORECAST_URL, httpCode);
+        }
+    }
+    else
+    {
+        Serial.printf("[HTTP] GET from %s failed, error: %s\n", WEATHER_FORECAST_URL, http.errorToString(httpCode).c_str());
+    }
+
+    http.end();
+    return retVal;
 }

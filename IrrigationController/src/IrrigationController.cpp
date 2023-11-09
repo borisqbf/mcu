@@ -16,6 +16,7 @@ long IrrigationController::pulseCounter = 0;
 bool IrrigationController::flowTooLow = false;
 int IrrigationController::maxWateringTime = 60;  // minutes
 int IrrigationController::wateringFrequency = 2; // every two days by default
+int IrrigationController::waterTankLevel = 0;
 
 // Volatile non-member vars for ISRs
 
@@ -86,6 +87,9 @@ void IrrigationController::Setup()
         notificationController->Display("Valve error", "Valve is open");
     }
     lastTimeVolumeMeasured = millis();
+    int wl = GetWaterTankLevel();
+    if (wl > 0)
+        waterTankLevel = wl;
 
     WebController::AddAction("/on", &IrrigationController::OpenValve);
     WebController::AddAction("/off", &IrrigationController::CloseValve);
@@ -94,7 +98,9 @@ void IrrigationController::Setup()
     WebController::AddAction("/set-calendar", &IrrigationController::SetCalendar);
     WebController::AddAction("/clear-calendar", &IrrigationController::ClearCalendar);
     WebController::AddAction("/status", &IrrigationController::GetStatus);
-    WebController::AddAction("/humidity", &IrrigationController::GetSHumidity);
+    WebController::AddAction("/humidity", &IrrigationController::GetHumidity);
+    WebController::AddAction("/next", &IrrigationController::SkipToNext);
+    WebController::AddAction("/skip-day", &IrrigationController::SkipDay);
 
     notificationController->Alert("Irrigation controller has started.");
     notificationController->Display("Ready.", "");
@@ -135,7 +141,22 @@ void IrrigationController::ProcesMainLoop()
         if (CheckStartTime())
         {
             SetNextStartTime();
-            OpenValveInt();
+            int newTankLevel = GetWaterTankLevel();
+            float rainfallExpected = webController->GetRainForecast();
+            SkipReason reason = WateringRequired(newTankLevel, rainfallExpected);
+            if (reason == SkipReason::None)
+            {
+                OpenValveInt();
+            }
+            else
+            {
+                char message[100];
+                strcpy(message, "No watering required. ");
+                strcat(message, GetSkipReasonDescription(reason));
+                notificationController->Alert(message);
+                if (newTankLevel > 0)
+                    waterTankLevel = newTankLevel;
+            }
         }
     }
     else if (currentState == State::Watering)
@@ -352,10 +373,8 @@ void IrrigationController::GetStatus()
     webController->SendHttpResponseOK(response);
 }
 
-void IrrigationController::GetSHumidity()
+int IrrigationController::GetHumidityImp()
 {
-    char resp[50];
-
     int h = 0;
 
     for (int i = 0; i < 100; i++)
@@ -363,7 +382,14 @@ void IrrigationController::GetSHumidity()
         h += analogRead(humidityInputPin);
         delay(10);
     }
-    snprintf(resp, 50, "Humidity: %d\n\n", h / 100);
+    return h / 100;
+}
+
+void IrrigationController::GetHumidity()
+{
+    char resp[50];
+
+    snprintf(resp, 50, "Humidity: %d\n\n", GetHumidityImp());
     webController->SendHttpResponseOK(resp);
 }
 
@@ -383,7 +409,8 @@ const char *IrrigationController::GenerateStatusResponse()
 {
     static char message[250];
     DateTime n(now());
-    snprintf(message, 250, "Current time is %02u/%02u/%u %02u:%02u\nCurrent state is %s\nCurrent flow is %d\nWatering target is %d liters\nMax watering duration is %d minutes\n", n.day(), n.month(), n.year(), n.hour(), n.minute(), GetCurrentState(), static_cast<int>(GetWaterFlow()), static_cast<int>(waterVolumeTarget), maxWateringTime);
+    snprintf(message, 250, "Current time is %02u/%02u/%u %02u:%02u\nCurrent state is %s\nCurrent flow is %d l/min\nWatering target is %d liters\nMax watering duration is %d minutes\nSoil humidity is %d; Rain forecast is %.2f mm; Delta tank level is %d cm\n", n.day(), n.month(), n.year(), n.hour(), n.minute(), GetCurrentState(), static_cast<int>(GetWaterFlow()), static_cast<int>(waterVolumeTarget), maxWateringTime, GetHumidityImp(), webController->GetRainForecast(), GetWaterTankLevel() - waterTankLevel);
+
     Serial.println(message);
     return message;
 }
@@ -405,6 +432,19 @@ const char *IrrigationController::GetCurrentState()
     }
 }
 
+const char *IrrigationController::GetSkipReasonDescription(SkipReason reason)
+{
+    switch (reason)
+    {
+    case SkipReason::RainBefore:
+        return "Sufficient rainfall since last watering.";
+    case SkipReason::RainForecast:
+        return "Significant rainfall is expected in the next 24 hours.";
+    default:
+        return "Reason unknown.";
+    }
+}
+
 float IrrigationController::GetWaterFlow()
 {
     return waterFlowRate;
@@ -419,6 +459,16 @@ bool IrrigationController::CheckStartTime()
 void IrrigationController::SetNextStartTime()
 {
     startTime = startTime + TimeSpan(wateringFrequency, 0, 0, 0);
+}
+
+void IrrigationController::SkipToNext()
+{
+    startTime = startTime + TimeSpan(wateringFrequency, 0, 0, 0);
+}
+
+void IrrigationController::SkipDay()
+{
+    startTime = startTime + TimeSpan(1, 0, 0, 0);
 }
 
 void IrrigationController::SetNextStartTime(int hour, int minute)
@@ -480,8 +530,28 @@ void IrrigationController::ValveClosed()
         stateChangedAt = DateTime(now());
         digitalWrite(valveOpenPin, LOW);
         digitalWrite(valveClosePin, LOW);
+        int wl = GetWaterTankLevel();
+        if (wl > 0)
+            waterTankLevel = wl;
     }
 }
+int IrrigationController::GetWaterTankLevel()
+{
+    return webController->GetWaterTankLevel();
+}
+
+SkipReason IrrigationController::WateringRequired(int newWaterTankLevel, float rainfallExpected)
+{
+    if (newWaterTankLevel < 0)
+        return SkipReason::None;
+    else if ((newWaterTankLevel + 2) < waterTankLevel)
+        return SkipReason::RainBefore; // considerable rainfall since last watering
+    else if (rainfallExpected > 10)
+        return SkipReason::RainForecast;
+    else
+        return SkipReason::None;
+}
+
 void IrrigationController::CloseValveInt()
 {
     currentState = State::ClosingValve;
