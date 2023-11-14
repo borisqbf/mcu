@@ -188,6 +188,7 @@ int WebController::GetWaterTankLevel()
 float WebController::GetRainForecast()
 {
     HTTPClient http;
+    http.useHTTP10(true);
     http.begin(WEATHER_FORECAST_URL); // HTTP
     float retVal = 0;
     int httpCode = http.GET();
@@ -197,13 +198,10 @@ float WebController::GetRainForecast()
         // file found at server
         if (httpCode == HTTP_CODE_OK)
         {
-            String payload = http.getString();
-            StaticJsonDocument<0> filter;
-            filter.set(true);
+      
+            DynamicJsonDocument doc(32768);
 
-            DynamicJsonDocument doc(24576);
-
-            DeserializationError error = deserializeJson(doc, payload, DeserializationOption::Filter(filter));
+            DeserializationError error = deserializeJson(doc, http.getStream());
 
             if (error)
             {
@@ -213,7 +211,8 @@ float WebController::GetRainForecast()
             }
 
             JsonObject forecast = doc["forecast"]["forecastday"][0];
-            retVal = forecast["totalprecip_mm"];
+            JsonObject dayforecast = forecast["day"];
+            retVal = dayforecast["totalprecip_mm"];
         }
         else
         {
