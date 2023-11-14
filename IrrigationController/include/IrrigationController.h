@@ -74,6 +74,8 @@ private:
     static long lastTimeVolumeMeasured;
     static float waterVolumeTarget;
     static float waterFlowRate;
+    static float deltaWaterTankLeveThreshold;
+    static float rainForecastThreshold;
     static long pulseCounter;
     static int maxWateringTime; // minutes
     static int wateringFrequency;

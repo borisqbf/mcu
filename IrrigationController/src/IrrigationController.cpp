@@ -12,6 +12,8 @@ float IrrigationController::waterVolume = 0.0;
 long IrrigationController::lastTimeVolumeMeasured = 0;
 float IrrigationController::waterVolumeTarget = 100.0;
 float IrrigationController::waterFlowRate = 0.0;
+float IrrigationController::deltaWaterTankLeveThreshold = 2.0;
+float IrrigationController::rainForecastThreshold = 10.0;
 long IrrigationController::pulseCounter = 0;
 bool IrrigationController::flowTooLow = false;
 int IrrigationController::maxWateringTime = 60;  // minutes
@@ -274,6 +276,24 @@ void IrrigationController::SetParams()
                     break;
                 }
             }
+            else if ((*params).p.equalsIgnoreCase("rain-forecast"))
+            {
+                rainForecastThreshold = (*params).v.toFloat();
+                if (rainForecastThreshold < 0.0)
+                {
+                    webController->SendHttpResponseBadRequest("rain-forecast");
+                    break;
+                }
+            }
+            else if ((*params).p.equalsIgnoreCase("delta-tank"))
+            {
+                deltaWaterTankLeveThreshold = (*params).v.toFloat();
+                if (deltaWaterTankLeveThreshold < 0.0)
+                {
+                    webController->SendHttpResponseBadRequest("delta-tank");
+                    break;
+                }
+            }
             else
             {
                 Serial.print("Unsupported parameter ");
@@ -407,9 +427,9 @@ void IrrigationController::OpenValve()
 
 const char *IrrigationController::GenerateStatusResponse()
 {
-    static char message[250];
+    static char message[300];
     DateTime n(now());
-    snprintf(message, 250, "Current time is %02u/%02u/%u %02u:%02u\nCurrent state is %s\nCurrent flow is %d l/min\nWatering target is %d liters\nMax watering duration is %d minutes\nSoil humidity is %d; Rain forecast is %.2f mm; Delta tank level is %d cm\n", n.day(), n.month(), n.year(), n.hour(), n.minute(), GetCurrentState(), static_cast<int>(GetWaterFlow()), static_cast<int>(waterVolumeTarget), maxWateringTime, GetHumidityImp(), webController->GetRainForecast(), GetWaterTankLevel() - waterTankLevel);
+    snprintf(message, 300, "Current time is %02u/%02u/%u %02u:%02u\nCurrent state is %s\nCurrent flow is %d l/min\nWatering target is %d liters\nMax watering duration is %d minutes\nDelta Watertamk level threshold is %.2f\nRain forecast threshold is %.2f\nSoil humidity is %d; Rain forecast is %.2f mm; Delta tank level is %d cm\n", n.day(), n.month(), n.year(), n.hour(), n.minute(), GetCurrentState(), static_cast<int>(GetWaterFlow()), static_cast<int>(waterVolumeTarget), maxWateringTime, deltaWaterTankLeveThreshold, rainForecastThreshold, GetHumidityImp(), webController->GetRainForecast(), waterTankLevel - GetWaterTankLevel());
 
     Serial.println(message);
     return message;
@@ -464,11 +484,17 @@ void IrrigationController::SetNextStartTime()
 void IrrigationController::SkipToNext()
 {
     startTime = startTime + TimeSpan(wateringFrequency, 0, 0, 0);
+    char response[] = "Next scheduled watering event: hh:mmAP on DD MMM YY\n\n";
+    startTime.toString(response);
+    webController->SendHttpResponseOK(response);
 }
 
 void IrrigationController::SkipDay()
 {
     startTime = startTime + TimeSpan(1, 0, 0, 0);
+    char response[] = "Next scheduled watering event: hh:mmAP on DD MMM YY\n\n";
+    startTime.toString(response);
+    webController->SendHttpResponseOK(response);
 }
 
 void IrrigationController::SetNextStartTime(int hour, int minute)
@@ -544,9 +570,9 @@ SkipReason IrrigationController::WateringRequired(int newWaterTankLevel, float r
 {
     if (newWaterTankLevel < 0)
         return SkipReason::None;
-    else if ((newWaterTankLevel + 2) < waterTankLevel)
+    else if ((newWaterTankLevel + deltaWaterTankLeveThreshold) < waterTankLevel)
         return SkipReason::RainBefore; // considerable rainfall since last watering
-    else if (rainfallExpected > 10)
+    else if (rainfallExpected > rainForecastThreshold)
         return SkipReason::RainForecast;
     else
         return SkipReason::None;
