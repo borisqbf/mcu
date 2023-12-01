@@ -76,6 +76,7 @@ private:
     static float waterFlowRate;
     static float deltaWaterTankLeveThreshold;
     static float rainForecastThreshold;
+    static int soilHumidityThreshold;
     static long pulseCounter;
     static int maxWateringTime; // minutes
     static int wateringFrequency;
@@ -83,6 +84,7 @@ private:
     bool CheckStartTime();
     void SetNextStartTime();
     static void SkipToNext();
+    static void SkipDayImp();
     static void SkipDay();
     static void SetNextStartTime(int hour, int mm);
     bool CheckEndTime();
@@ -92,7 +94,7 @@ private:
 
     static int GetHumidityImp();
     static int GetWaterTankLevel();
-    SkipReason WateringRequired(int newWaterTankLevel, float rainForecast);
+    SkipReason WateringRequired(int newWaterTankLevel, float rainForecast, int soilHumidity);
     const char *GetSkipReasonDescription(SkipReason reason);
 
     static void

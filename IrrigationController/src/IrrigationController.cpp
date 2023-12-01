@@ -14,6 +14,9 @@ float IrrigationController::waterVolumeTarget = 100.0;
 float IrrigationController::waterFlowRate = 0.0;
 float IrrigationController::deltaWaterTankLeveThreshold = 2.0;
 float IrrigationController::rainForecastThreshold = 10.0;
+int IrrigationController::soilHumidityThreshold = 2100.0;
+
+
 long IrrigationController::pulseCounter = 0;
 bool IrrigationController::flowTooLow = false;
 int IrrigationController::maxWateringTime = 60;  // minutes
@@ -76,6 +79,8 @@ void IrrigationController::Setup()
     pinMode(interruptWaterFlowTickPin, INPUT_PULLUP);
     pinMode(interruptValveOpenPin, INPUT);
     pinMode(interruptValveClosedPin, INPUT);
+
+    pinMode(humidityInputPin, INPUT);
 
     pinMode(humidityPowerPin, OUTPUT);
     digitalWrite(humidityPowerPin, LOW);
@@ -142,16 +147,19 @@ void IrrigationController::ProcesMainLoop()
     {
         if (CheckStartTime())
         {
-            SetNextStartTime();
-            int newTankLevel = GetWaterTankLevel();
+             int newTankLevel = GetWaterTankLevel();
             float rainfallExpected = webController->GetRainForecast();
-            SkipReason reason = WateringRequired(newTankLevel, rainfallExpected);
+            int soilHumidity = GetHumidityImp();
+            SkipReason reason = WateringRequired(newTankLevel, rainfallExpected, soilHumidity);
             if (reason == SkipReason::None)
             {
+                SetNextStartTime();
                 OpenValveInt();
             }
             else
             {
+                
+                SkipDayImp();
                 char message[100];
                 strcpy(message, "No watering required. ");
                 strcat(message, GetSkipReasonDescription(reason));
@@ -285,6 +293,15 @@ void IrrigationController::SetParams()
                     break;
                 }
             }
+            else if ((*params).p.equalsIgnoreCase("soil-humidity"))
+            {
+                soilHumidityThreshold = (*params).v.toInt();
+                if (soilHumidityThreshold < 0.0)
+                {
+                    webController->SendHttpResponseBadRequest("soil-humidity");
+                    break;
+                }
+            }
             else if ((*params).p.equalsIgnoreCase("delta-tank"))
             {
                 deltaWaterTankLeveThreshold = (*params).v.toFloat();
@@ -407,7 +424,7 @@ int IrrigationController::GetHumidityImp()
 
 void IrrigationController::GetHumidity()
 {
-    char resp[50];
+    static char resp[50];
 
     snprintf(resp, 50, "Humidity: %d\n\n", GetHumidityImp());
     webController->SendHttpResponseOK(resp);
@@ -429,7 +446,7 @@ const char *IrrigationController::GenerateStatusResponse()
 {
     static char message[300];
     DateTime n(now());
-    snprintf(message, 300, "Current time is %02u/%02u/%u %02u:%02u\nCurrent state is %s\nCurrent flow is %d l/min\nWatering target is %d liters\nMax watering duration is %d minutes\nDelta Watertamk level threshold is %.2f\nRain forecast threshold is %.2f\nSoil humidity is %d; Rain forecast is %.2f mm; Delta tank level is %d cm\n", n.day(), n.month(), n.year(), n.hour(), n.minute(), GetCurrentState(), static_cast<int>(GetWaterFlow()), static_cast<int>(waterVolumeTarget), maxWateringTime, deltaWaterTankLeveThreshold, rainForecastThreshold, GetHumidityImp(), webController->GetRainForecast(), waterTankLevel - GetWaterTankLevel());
+    snprintf(message, 300, "Current time is %02u/%02u/%u %02u:%02u\nCurrent state is %s\nCurrent flow is %d l/min\nWatering target is %d liters\nMax watering duration is %d minutes\nDelta Watertamk level threshold is %.2f cm\nRain forecast threshold is %.2f mm\nSoil humidity is %d; Rain forecast is %.2f mm; Delta tank level is %d cm\n", n.day(), n.month(), n.year(), n.hour(), n.minute(), GetCurrentState(), static_cast<int>(GetWaterFlow()), static_cast<int>(waterVolumeTarget), maxWateringTime, deltaWaterTankLeveThreshold, rainForecastThreshold, GetHumidityImp(), webController->GetRainForecast(), waterTankLevel - GetWaterTankLevel());
 
     Serial.println(message);
     return message;
@@ -489,9 +506,14 @@ void IrrigationController::SkipToNext()
     webController->SendHttpResponseOK(response);
 }
 
-void IrrigationController::SkipDay()
+void IrrigationController::SkipDayImp()
 {
     startTime = startTime + TimeSpan(1, 0, 0, 0);
+}
+
+void IrrigationController::SkipDay()
+{
+    SkipDayImp();
     char response[] = "Next scheduled watering event: hh:mmAP on DD MMM YY\n\n";
     startTime.toString(response);
     webController->SendHttpResponseOK(response);
@@ -566,14 +588,16 @@ int IrrigationController::GetWaterTankLevel()
     return webController->GetWaterTankLevel();
 }
 
-SkipReason IrrigationController::WateringRequired(int newWaterTankLevel, float rainfallExpected)
+SkipReason IrrigationController::WateringRequired(int newWaterTankLevel, float rainfallExpected, int soilHumidity)
 {
     if (newWaterTankLevel < 0)
         return SkipReason::None;
-    else if ((newWaterTankLevel + deltaWaterTankLeveThreshold) < waterTankLevel)
-        return SkipReason::RainBefore; // considerable rainfall since last watering
+    else if (((newWaterTankLevel + deltaWaterTankLeveThreshold) < waterTankLevel) && newWaterTankLevel < 180 && waterTankLevel < 180200)
+        return SkipReason::RainBefore; // considerable rainfall since last watering. Level readings above 180 are unreliable
     else if (rainfallExpected > rainForecastThreshold)
         return SkipReason::RainForecast;
+    else if (soilHumidity < soilHumidityThreshold)
+        return SkipReason::SoilHumidity;
     else
         return SkipReason::None;
 }

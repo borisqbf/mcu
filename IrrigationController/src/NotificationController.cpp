@@ -46,7 +46,7 @@ void NotificationController::Setup()
 
     config.time.ntp_server = F("pool.ntp.org,time.nist.gov");
     config.time.gmt_offset = 10;
-    config.time.day_light_offset = 0;
+    config.time.day_light_offset = 1;
 }
 
 void NotificationController::ProcessMainLoop()

@@ -1,0 +1,15 @@
+C:\Working\mcu\SoulHumidityLogger\bin\Debug\net6.0\SoulHumidityLogger.exe
+C:\Working\mcu\SoulHumidityLogger\bin\Debug\net6.0\SoulHumidityLogger.deps.json
+C:\Working\mcu\SoulHumidityLogger\bin\Debug\net6.0\SoulHumidityLogger.runtimeconfig.json
+C:\Working\mcu\SoulHumidityLogger\bin\Debug\net6.0\SoulHumidityLogger.dll
+C:\Working\mcu\SoulHumidityLogger\bin\Debug\net6.0\SoulHumidityLogger.pdb
+C:\Working\mcu\SoulHumidityLogger\obj\Debug\net6.0\SoulHumidityLogger.csproj.AssemblyReference.cache
+C:\Working\mcu\SoulHumidityLogger\obj\Debug\net6.0\SoulHumidityLogger.GeneratedMSBuildEditorConfig.editorconfig
+C:\Working\mcu\SoulHumidityLogger\obj\Debug\net6.0\SoulHumidityLogger.AssemblyInfoInputs.cache
+C:\Working\mcu\SoulHumidityLogger\obj\Debug\net6.0\SoulHumidityLogger.AssemblyInfo.cs
+C:\Working\mcu\SoulHumidityLogger\obj\Debug\net6.0\SoulHumidityLogger.csproj.CoreCompileInputs.cache
+C:\Working\mcu\SoulHumidityLogger\obj\Debug\net6.0\SoulHumidityLogger.dll
+C:\Working\mcu\SoulHumidityLogger\obj\Debug\net6.0\refint\SoulHumidityLogger.dll
+C:\Working\mcu\SoulHumidityLogger\obj\Debug\net6.0\SoulHumidityLogger.pdb
+C:\Working\mcu\SoulHumidityLogger\obj\Debug\net6.0\SoulHumidityLogger.genruntimeconfig.cache
+C:\Working\mcu\SoulHumidityLogger\obj\Debug\net6.0\ref\SoulHumidityLogger.dll
