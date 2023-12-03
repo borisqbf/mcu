@@ -444,9 +444,9 @@ void IrrigationController::OpenValve()
 
 const char *IrrigationController::GenerateStatusResponse()
 {
-    static char message[300];
+    static char message[350];
     DateTime n(now());
-    snprintf(message, 300, "Current time is %02u/%02u/%u %02u:%02u\nCurrent state is %s\nCurrent flow is %d l/min\nWatering target is %d liters\nMax watering duration is %d minutes\nDelta Watertamk level threshold is %.2f cm\nRain forecast threshold is %.2f mm\nSoil humidity is %d; Rain forecast is %.2f mm; Delta tank level is %d cm\n", n.day(), n.month(), n.year(), n.hour(), n.minute(), GetCurrentState(), static_cast<int>(GetWaterFlow()), static_cast<int>(waterVolumeTarget), maxWateringTime, deltaWaterTankLeveThreshold, rainForecastThreshold, GetHumidityImp(), webController->GetRainForecast(), waterTankLevel - GetWaterTankLevel());
+    snprintf(message, 350, "Current time is %02u/%02u/%u %02u:%02u\nCurrent state: %s\nCurrent flow: %d l/min\nWatering target: %d liters\nMax watering duration: %d min\nDelta Watertamk level threshold: %.2f cm\nRain forecast threshold: %.2f mm\nSoil humidity threshold: %.2f mm\nDelta tank level: %d cm\nRain forecast: %.2f mm\nSoil humidity is %d\n", n.day(), n.month(), n.year(), n.hour(), n.minute(), GetCurrentState(), static_cast<int>(GetWaterFlow()), static_cast<int>(waterVolumeTarget), maxWateringTime, deltaWaterTankLeveThreshold, rainForecastThreshold, soilHumidityThreshold, waterTankLevel - GetWaterTankLevel(), webController->GetRainForecast(), GetHumidityImp());
 
     Serial.println(message);
     return message;
