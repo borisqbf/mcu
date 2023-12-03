@@ -477,6 +477,8 @@ const char *IrrigationController::GetSkipReasonDescription(SkipReason reason)
         return "Sufficient rainfall since last watering.";
     case SkipReason::RainForecast:
         return "Significant rainfall is expected in the next 24 hours.";
+   case SkipReason::SoilHumidity:
+        return "Soil moisture is sufficient.";
     default:
         return "Reason unknown.";
     }
@@ -592,7 +594,7 @@ SkipReason IrrigationController::WateringRequired(int newWaterTankLevel, float r
 {
     if (newWaterTankLevel < 0)
         return SkipReason::None;
-    else if (((newWaterTankLevel + deltaWaterTankLeveThreshold) < waterTankLevel) && newWaterTankLevel < 180 && waterTankLevel < 180200)
+    else if (((newWaterTankLevel + deltaWaterTankLeveThreshold) < waterTankLevel) && newWaterTankLevel < 180 && waterTankLevel < 180)
         return SkipReason::RainBefore; // considerable rainfall since last watering. Level readings above 180 are unreliable
     else if (rainfallExpected > rainForecastThreshold)
         return SkipReason::RainForecast;

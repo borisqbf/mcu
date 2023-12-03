@@ -2,6 +2,7 @@
 #define WEBCONTROLLER_H
 
 #include <WebServer.h>
+#include <HTTPClient.h>
 #include <Arduino.h>
 #include <WiFi.h>
 
@@ -39,6 +40,7 @@ public:
 private:
     WebController();
     static WebServer *server;
+    static HTTPClient *httpClient;
 
     static void HandleRoot();
     static void HandleNotFound();

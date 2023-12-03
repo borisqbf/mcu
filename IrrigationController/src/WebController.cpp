@@ -1,6 +1,5 @@
 #include <ESPmDNS.h>
 #include <TimeLib.h>
-#include <HTTPClient.h>
 #include <ArduinoJson.h>
 #include "DateTimeLib.h"
 #include "WebController.h"
@@ -11,6 +10,8 @@ WebController *WebController::theInstance = NULL;
 WebController::Route WebController::routes[MAX_ROUTES];
 int WebController::nextRouteIndex = 1; // one for root
 WebServer *WebController::server = NULL;
+HTTPClient *WebController::httpClient = NULL;
+
 
 WebController::WebController()
 {
@@ -21,6 +22,8 @@ WebController::WebController()
         routes[i].url = nullptr;
         routes[i].handler = nullptr;
     }
+    httpClient = new HTTPClient();
+    httpClient->useHTTP10(true);
 }
 
 WebController *WebController::GetInstance()
@@ -154,17 +157,16 @@ void WebController::SendHttpResponseBadRequest(const char *message)
 
 int WebController::GetWaterTankLevel()
 {
-    HTTPClient http;
-    http.begin(TANK_LEVEL_URL); // HTTP
-    int retVal = -1;
-    int httpCode = http.GET();
+    httpClient->begin(TANK_LEVEL_URL); // HTTP
+    long retVal = -1;
+    int httpCode = httpClient->GET();
 
     if (httpCode > 0)
     {
         // file found at server
         if (httpCode == HTTP_CODE_OK)
         {
-            String payload = http.getString();
+            String payload = httpClient->getString();
             Serial.println(payload);
             retVal = payload.toInt();
             if (retVal == 0)
@@ -178,20 +180,18 @@ int WebController::GetWaterTankLevel()
     }
     else
     {
-        Serial.printf("[HTTP] GET from %s failed, error: %s\n", TANK_LEVEL_URL, http.errorToString(httpCode).c_str());
+        Serial.printf("[HTTP] GET from %s failed, error: %s\n", TANK_LEVEL_URL, httpClient->errorToString(httpCode).c_str());
     }
 
-    http.end();
-    return retVal;
+    httpClient->end();
+    return static_cast<int>(retVal);
 }
 
 float WebController::GetRainForecast()
 {
-    HTTPClient http;
-    http.useHTTP10(true);
-    http.begin(WEATHER_FORECAST_URL); // HTTP
+    httpClient->begin(WEATHER_FORECAST_URL); // HTTP
     float retVal = 0;
-    int httpCode = http.GET();
+    int httpCode = httpClient->GET();
 
     if (httpCode > 0)
     {
@@ -201,18 +201,20 @@ float WebController::GetRainForecast()
       
             DynamicJsonDocument doc(32768);
 
-            DeserializationError error = deserializeJson(doc, http.getStream());
+            DeserializationError error = deserializeJson(doc, httpClient->getStream());
 
             if (error)
             {
                 Serial.print("deserializeJson() failed: ");
                 Serial.println(error.c_str());
-                return 0;
+                retVal = 0;
             }
-
-            JsonObject forecast = doc["forecast"]["forecastday"][0];
-            JsonObject dayforecast = forecast["day"];
-            retVal = dayforecast["totalprecip_mm"];
+            else
+            {
+                JsonObject forecast = doc["forecast"]["forecastday"][0];
+                JsonObject dayforecast = forecast["day"];
+                retVal = dayforecast["totalprecip_mm"];
+            }
         }
         else
         {
@@ -222,9 +224,9 @@ float WebController::GetRainForecast()
     }
     else
     {
-        Serial.printf("[HTTP] GET from %s failed, error: %s\n", WEATHER_FORECAST_URL, http.errorToString(httpCode).c_str());
+        Serial.printf("[HTTP] GET from %s failed, error: %s\n", WEATHER_FORECAST_URL, httpClient->errorToString(httpCode).c_str());
     }
 
-    http.end();
+    httpClient->end();
     return retVal;
 }
