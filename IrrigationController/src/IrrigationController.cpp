@@ -16,7 +16,6 @@ float IrrigationController::deltaWaterTankLeveThreshold = 2.0;
 float IrrigationController::rainForecastThreshold = 10.0;
 int IrrigationController::soilHumidityThreshold = 2100.0;
 
-
 long IrrigationController::pulseCounter = 0;
 bool IrrigationController::flowTooLow = false;
 int IrrigationController::maxWateringTime = 60;  // minutes
@@ -147,7 +146,7 @@ void IrrigationController::ProcesMainLoop()
     {
         if (CheckStartTime())
         {
-             int newTankLevel = GetWaterTankLevel();
+            int newTankLevel = GetWaterTankLevel();
             float rainfallExpected = webController->GetRainForecast();
             int soilHumidity = GetHumidityImp();
             SkipReason reason = WateringRequired(newTankLevel, rainfallExpected, soilHumidity);
@@ -158,7 +157,6 @@ void IrrigationController::ProcesMainLoop()
             }
             else
             {
-                
                 SkipDayImp();
                 char message[100];
                 strcpy(message, "No watering required. ");
@@ -477,7 +475,7 @@ const char *IrrigationController::GetSkipReasonDescription(SkipReason reason)
         return "Sufficient rainfall since last watering.";
     case SkipReason::RainForecast:
         return "Significant rainfall is expected in the next 24 hours.";
-   case SkipReason::SoilHumidity:
+    case SkipReason::SoilHumidity:
         return "Soil moisture is sufficient.";
     default:
         return "Reason unknown.";
