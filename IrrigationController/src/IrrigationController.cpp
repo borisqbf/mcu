@@ -3,6 +3,7 @@
 // Statics
 IrrigationController *IrrigationController::theInstance = NULL;
 enum State IrrigationController::currentState = State::Idle;
+bool IrrigationController::inSelfTestMode = false;
 WebController *IrrigationController::webController = NULL;
 NotificationController *IrrigationController::notificationController = NULL;
 DateTime IrrigationController::stateChangedAt;
@@ -10,17 +11,25 @@ DateTime IrrigationController::startTime;
 
 float IrrigationController::waterVolume = 0.0;
 long IrrigationController::lastTimeVolumeMeasured = 0;
-float IrrigationController::waterVolumeTarget = 100.0;
+float IrrigationController::waterVolumeTarget = 200.0;
 float IrrigationController::waterFlowRate = 0.0;
 float IrrigationController::deltaWaterTankLeveThreshold = 2.0;
-float IrrigationController::rainForecastThreshold = 10.0;
+float IrrigationController::rainForecastThreshold = 5.0;
 int IrrigationController::soilHumidityThreshold = 2100.0;
 
 long IrrigationController::pulseCounter = 0;
 bool IrrigationController::flowTooLow = false;
-int IrrigationController::maxWateringTime = 60;  // minutes
+int IrrigationController::maxWateringTime = 20;  // minutes
 int IrrigationController::wateringFrequency = 2; // every two days by default
 int IrrigationController::waterTankLevel = 0;
+
+// temp storage of irrigation parameters during self-test
+DateTime IrrigationController::tmpStartTime;
+float IrrigationController::tmpWaterVolumeTarget;
+float IrrigationController::tmpDeltaWaterTankLeveThreshold;
+float IrrigationController::tmpRainForecastThreshold;
+int IrrigationController::tmpSoilHumidityThreshold;
+int IrrigationController::tmpMaxWateringTime;
 
 // Volatile non-member vars for ISRs
 
@@ -107,6 +116,7 @@ void IrrigationController::Setup()
     WebController::AddAction("/humidity", &IrrigationController::GetHumidity);
     WebController::AddAction("/next", &IrrigationController::SkipToNext);
     WebController::AddAction("/skip-day", &IrrigationController::SkipDay);
+    WebController::AddAction("/selftest", &IrrigationController::SelfTest);
 
     notificationController->Alert("Irrigation controller has started.");
     notificationController->Display("Ready.", "");
@@ -158,9 +168,12 @@ void IrrigationController::ProcesMainLoop()
             else
             {
                 SkipDayImp();
-                char message[100];
+                char message[150];
                 strcpy(message, "No watering required. ");
                 strcat(message, GetSkipReasonDescription(reason));
+                strcat(message, " Next scheduled watering event: hh:mmAP on DD MMM YY");
+                startTime.toString(message);
+
                 notificationController->Alert(message);
                 if (newTankLevel > 0)
                     waterTankLevel = newTankLevel;
@@ -179,6 +192,10 @@ void IrrigationController::ProcesMainLoop()
             snprintf(message, 150, "Watering finished at %02d/%02d/%d %02d:%02d.  Watering target of %d liters has been reached. The process took %d minutes.", n.day(), n.month(), n.year(), n.hour(), n.minute(), static_cast<int>(waterVolumeTarget), duration.totalseconds() / 60);
             notificationController->Alert(message);
             notificationController->Display("Ready", "Finished");
+            if (inSelfTestMode)
+            {
+                EndSelfTest();
+            }
         }
         else if (CheckEndTime())
         {
@@ -187,6 +204,10 @@ void IrrigationController::ProcesMainLoop()
             snprintf(message, 150, "Watering aborted at %02d/%02d/%d %02d:%02d after %d minutes. Watering target of %d liters has not been reached. %d liters have been dispensed", n.day(), n.month(), n.year(), n.hour(), n.minute(), maxWateringTime, static_cast<int>(waterVolumeTarget), static_cast<int>(waterVolume));
             notificationController->Alert(message);
             notificationController->Display("Ready", "Aborted");
+            if (inSelfTestMode)
+            {
+                EndSelfTest();
+            }
         }
         if (((millis() - lastTimeVolumeMeasured) > 30000) &&
             ((DateTime(now()) - stateChangedAt).totalseconds() > 2 * maxValveActionTime))
@@ -273,12 +294,12 @@ void IrrigationController::SetParams()
                     break;
                 }
             }
-            else if ((*params).p.equalsIgnoreCase("duration"))
+            else if ((*params).p.equalsIgnoreCase("max-duration"))
             {
                 maxWateringTime = (*params).v.toInt();
                 if (maxWateringTime < 1)
                 {
-                    webController->SendHttpResponseBadRequest("duration");
+                    webController->SendHttpResponseBadRequest("max-duration");
                     break;
                 }
             }
@@ -444,7 +465,7 @@ const char *IrrigationController::GenerateStatusResponse()
 {
     static char message[350];
     DateTime n(now());
-    snprintf(message, 350, "Current time is %02u/%02u/%u %02u:%02u\nCurrent state: %s\nCurrent flow: %d l/min\nWatering target: %d liters\nMax watering duration: %d min\nDelta Watertamk level threshold: %.2f cm\nRain forecast threshold: %.2f mm\nSoil humidity threshold: %d mm\nDelta tank level: %d cm\nRain forecast: %.2f mm\nSoil humidity is %d\n", n.day(), n.month(), n.year(), n.hour(), n.minute(), GetCurrentState(), static_cast<int>(GetWaterFlow()), static_cast<int>(waterVolumeTarget), maxWateringTime, deltaWaterTankLeveThreshold, rainForecastThreshold, soilHumidityThreshold, waterTankLevel - GetWaterTankLevel(), webController->GetRainForecast(), GetHumidityImp());
+    snprintf(message, 350, "Current time is %02u/%02u/%u %02u:%02u\nCurrent state: %s\nCurrent flow: %d l/min\nWatering target: %d liters\nMax watering duration: %d min\nDelta Watertamk level threshold: %.2f cm\nRain forecast threshold: %.2f mm\nSoil humidity threshold: %d\nDelta tank level: %d cm\nRain forecast: %.2f mm\nSoil humidity: %d\n", n.day(), n.month(), n.year(), n.hour(), n.minute(), GetCurrentState(), static_cast<int>(GetWaterFlow()), static_cast<int>(waterVolumeTarget), maxWateringTime, deltaWaterTankLeveThreshold, rainForecastThreshold, soilHumidityThreshold, waterTankLevel - GetWaterTankLevel(), webController->GetRainForecast(), GetHumidityImp());
 
     Serial.println(message);
     return message;
@@ -517,6 +538,45 @@ void IrrigationController::SkipDay()
     char response[] = "Next scheduled watering event: hh:mmAP on DD MMM YY\n\n";
     startTime.toString(response);
     webController->SendHttpResponseOK(response);
+}
+
+void IrrigationController::SelfTest()
+{
+    inSelfTestMode = true;
+    
+    // temp storage of irrigation parameters during self-test
+    tmpStartTime = startTime;
+    tmpWaterVolumeTarget = waterVolumeTarget;
+    tmpDeltaWaterTankLeveThreshold = deltaWaterTankLeveThreshold;
+    tmpRainForecastThreshold = rainForecastThreshold;
+    tmpSoilHumidityThreshold = soilHumidityThreshold;
+    tmpMaxWateringTime = maxWateringTime;
+
+    waterVolumeTarget = 10; // Displense 10 liters in max 3 minutes 
+    maxWateringTime = 3;
+
+    // ensure watering start conditions
+    deltaWaterTankLeveThreshold = 300;
+    rainForecastThreshold = 100;
+    soilHumidityThreshold = 0;
+    DateTime n(now());
+    startTime = n + TimeSpan(20);
+    webController->SendHttpResponseOK("Self-Test started");
+}
+
+void IrrigationController::EndSelfTest()
+{
+    inSelfTestMode = false;
+
+    // restore saved irrigation params
+    startTime = tmpStartTime;
+    waterVolumeTarget = tmpWaterVolumeTarget;
+    deltaWaterTankLeveThreshold = tmpDeltaWaterTankLeveThreshold;
+    rainForecastThreshold= tmpRainForecastThreshold;
+    soilHumidityThreshold = tmpSoilHumidityThreshold;
+    maxWateringTime = tmpMaxWateringTime;
+
+    notificationController->Alert("Self-Test is complete");
 }
 
 void IrrigationController::SetNextStartTime(int hour, int minute)

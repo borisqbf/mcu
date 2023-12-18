@@ -58,6 +58,7 @@ public:
     static void GetStatus();
     static void WaterFlowTick();
     static void GetHumidity();
+    static void SelfTest();
 
 private:
     IrrigationController();
@@ -65,6 +66,7 @@ private:
     static WebController *webController;
     static NotificationController *notificationController;
     static enum State currentState;
+    static bool inSelfTestMode;
     static DateTime stateChangedAt;
     static DateTime startTime;
     const int maxValveActionTime = 30;    // sec
@@ -81,6 +83,15 @@ private:
     static int maxWateringTime; // minutes
     static int wateringFrequency;
     static int waterTankLevel;
+    
+    // temp storage of irrigation parameters during self-test
+    static DateTime tmpStartTime;
+    static float tmpWaterVolumeTarget;
+    static float tmpDeltaWaterTankLeveThreshold;
+    static float tmpRainForecastThreshold;
+    static int tmpSoilHumidityThreshold;
+    static int tmpMaxWateringTime;
+
     bool CheckStartTime();
     void SetNextStartTime();
     static void SkipToNext();
@@ -97,10 +108,10 @@ private:
     SkipReason WateringRequired(int newWaterTankLevel, float rainForecast, int soilHumidity);
     const char *GetSkipReasonDescription(SkipReason reason);
 
-    static void
-    CloseValveInt();
+    static void CloseValveInt();
     static void OpenValveInt();
     static void InializeFlow();
+    static void EndSelfTest();
 };
 
 #endif
