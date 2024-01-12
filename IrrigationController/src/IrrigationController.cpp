@@ -157,7 +157,7 @@ void IrrigationController::ProcesMainLoop()
         if (CheckStartTime())
         {
             int newTankLevel = GetWaterTankLevel();
-            float rainfallExpected = webController->GetRainForecast();
+            float rainfallExpected = GetRainForecast();
             int soilHumidity = GetHumidityImp();
             SkipReason reason = WateringRequired(newTankLevel, rainfallExpected, soilHumidity);
             if (reason == SkipReason::None)
@@ -465,7 +465,7 @@ const char *IrrigationController::GenerateStatusResponse()
 {
     static char message[350];
     DateTime n(now());
-    snprintf(message, 350, "Current time is %02u/%02u/%u %02u:%02u\nCurrent state: %s\nCurrent flow: %d l/min\nWatering target: %d liters\nMax watering duration: %d min\nDelta Watertamk level threshold: %.2f cm\nRain forecast threshold: %.2f mm\nSoil humidity threshold: %d\nDelta tank level: %d cm\nRain forecast: %.2f mm\nSoil humidity: %d\n", n.day(), n.month(), n.year(), n.hour(), n.minute(), GetCurrentState(), static_cast<int>(GetWaterFlow()), static_cast<int>(waterVolumeTarget), maxWateringTime, deltaWaterTankLeveThreshold, rainForecastThreshold, soilHumidityThreshold, waterTankLevel - GetWaterTankLevel(), webController->GetRainForecast(), GetHumidityImp());
+    snprintf(message, 350, "Current time is %02u/%02u/%u %02u:%02u\nCurrent state: %s\nCurrent flow: %d l/min\nWatering target: %d liters\nMax watering duration: %d min\nDelta Watertamk level threshold: %.2f cm\nRain forecast threshold: %.2f mm\nSoil humidity threshold: %d\nDelta tank level: %d cm\nRain forecast: %.2f mm\nSoil humidity: %d\n", n.day(), n.month(), n.year(), n.hour(), n.minute(), GetCurrentState(), static_cast<int>(GetWaterFlow()), static_cast<int>(waterVolumeTarget), maxWateringTime, deltaWaterTankLeveThreshold, rainForecastThreshold, soilHumidityThreshold, waterTankLevel - GetWaterTankLevel(), GetRainForecast(), GetHumidityImp());
 
     Serial.println(message);
     return message;
@@ -648,6 +648,13 @@ int IrrigationController::GetWaterTankLevel()
     return webController->GetWaterTankLevel();
 }
 
+float IrrigationController::GetRainForecast()
+{
+    DateTime n(now());
+    DateTime noon(n.year(), n.month(), n.day(), 12, 0, 0);
+    return webController->GetRainForecast(n > noon);
+}
+
 SkipReason IrrigationController::WateringRequired(int newWaterTankLevel, float rainfallExpected, int soilHumidity)
 {
     if (newWaterTankLevel < 0)
@@ -656,7 +663,7 @@ SkipReason IrrigationController::WateringRequired(int newWaterTankLevel, float r
         return SkipReason::RainBefore; // considerable rainfall since last watering. Level readings above 180 are unreliable
     else if (rainfallExpected > rainForecastThreshold)
         return SkipReason::RainForecast;
-    else if (soilHumidity < soilHumidityThreshold)
+    else if (soilHumidity > soilHumidityThreshold)
         return SkipReason::SoilHumidity;
     else
         return SkipReason::None;

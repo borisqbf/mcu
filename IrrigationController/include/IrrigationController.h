@@ -105,6 +105,7 @@ private:
 
     static int GetHumidityImp();
     static int GetWaterTankLevel();
+    static float GetRainForecast();
     SkipReason WateringRequired(int newWaterTankLevel, float rainForecast, int soilHumidity);
     const char *GetSkipReasonDescription(SkipReason reason);
 

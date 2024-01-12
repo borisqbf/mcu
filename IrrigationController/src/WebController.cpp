@@ -43,8 +43,7 @@ WebController *WebController::GetInstance()
 
 void WebController::HandleRoot()
 {
-    String message = "Hello resolved by mDNS!\n\n";
-    message += "\nAvailable routes are:\n";
+    String message = "Available routes are:\n";
     for (int i = 0; i < MAX_ROUTES; i++)
     {
         if (routes[i].url == nullptr)
@@ -187,9 +186,10 @@ int WebController::GetWaterTankLevel()
     return static_cast<int>(retVal);
 }
 
-float WebController::GetRainForecast()
+float WebController::GetRainForecast(bool tomorrow)
 {
-    httpClient->begin(WEATHER_FORECAST_URL); // HTTP
+    const char *weatherForecastUrl = tomorrow ? WEATHER_FORECAST_URL_TOMORROW : WEATHER_FORECAST_URL_TODAY;
+    httpClient->begin(weatherForecastUrl); // HTTP
     float retVal = 0;
     int httpCode = httpClient->GET();
 
@@ -211,7 +211,7 @@ float WebController::GetRainForecast()
             }
             else
             {
-                JsonObject forecast = doc["forecast"]["forecastday"][0];
+                JsonObject forecast = doc["forecast"]["forecastday"][tomorrow ? 1 : 0];
                 JsonObject dayforecast = forecast["day"];
                 retVal = dayforecast["totalprecip_mm"];
             }
@@ -219,12 +219,12 @@ float WebController::GetRainForecast()
         else
         {
             // HTTP header has been send and Server response header has been handled
-            Serial.printf("[HTTP] GET from %s code: %d\n", WEATHER_FORECAST_URL, httpCode);
+            Serial.printf("[HTTP] GET from %s code: %d\n", weatherForecastUrl, httpCode);
         }
     }
     else
     {
-        Serial.printf("[HTTP] GET from %s failed, error: %s\n", WEATHER_FORECAST_URL, httpClient->errorToString(httpCode).c_str());
+        Serial.printf("[HTTP] GET from %s failed, error: %s\n", weatherForecastUrl, httpClient->errorToString(httpCode).c_str());
     }
 
     httpClient->end();
