@@ -199,7 +199,7 @@ float WebController::GetRainForecast(bool tomorrow)
         if (httpCode == HTTP_CODE_OK)
         {
       
-            DynamicJsonDocument doc(32768);
+            JsonDocument doc;
 
             DeserializationError error = deserializeJson(doc, httpClient->getStream());
 
