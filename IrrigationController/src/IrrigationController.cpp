@@ -15,7 +15,7 @@ float IrrigationController::waterVolumeTarget = 200.0;
 float IrrigationController::waterFlowRate = 0.0;
 float IrrigationController::deltaWaterTankLeveThreshold = 2.0;
 float IrrigationController::rainForecastThreshold = 5.0;
-int IrrigationController::soilHumidityThreshold = 2100.0;
+int IrrigationController::soilHumidityThreshold = 3000.0;
 
 long IrrigationController::pulseCounter = 0;
 bool IrrigationController::flowTooLow = false;
@@ -278,7 +278,7 @@ void IrrigationController::SetParams()
 {
     WebController::UrlQueryParameter *params = WebController::GetUrlQueryParams();
     if (params == nullptr)
-        webController->SendHttpResponseOK("Missing Parameters\n\n");
+        webController->SendHttpResponseOK("Missing Parameter. Available parameters are:\ntarget\nmax-duration\nrain-forecast\nsoil-humidity\ndelta-tank\n\n");
     else
     {
         WebController::UrlQueryParameter *paramsToDelete = params;
@@ -558,7 +558,7 @@ void IrrigationController::SelfTest()
     // ensure watering start conditions
     deltaWaterTankLeveThreshold = 300;
     rainForecastThreshold = 100;
-    soilHumidityThreshold = 0;
+    soilHumidityThreshold = 10000;
     DateTime n(now());
     startTime = n + TimeSpan(20);
     webController->SendHttpResponseOK("Self-Test started");
