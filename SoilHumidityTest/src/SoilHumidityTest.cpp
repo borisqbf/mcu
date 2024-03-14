@@ -27,6 +27,8 @@ void setup()
 
 int GetHumidityImp()
 {
+    digitalWrite(humidityPowerPin, HIGH);
+    delay (10000);
     int h = 0;
 
     for (int i = 0; i < 100; i++)
@@ -35,11 +37,12 @@ int GetHumidityImp()
         delay(10);
     }
     return h / 100;
+    digitalWrite(humidityPowerPin, LOW);
 }
 void loop()
 {
     lcd.clear();
     lcd.setCursor(0, 0);
     lcd.print(GetHumidityImp());
-    delay(10000);
+    delay(30000);
 }

@@ -5,7 +5,6 @@
 #include "LEDStatusReporter.h"
 #include "WiFiController.h"
 
-#pragma region general definitions
 const uint8_t TOGGLE_PIN = 14;
 const uint8_t MANUAL_PIN = 16;
 const uint8_t MODE_PIN = 12;
@@ -21,7 +20,6 @@ PowerMode mode = OnSolar;
 float OnGridThreshold = 21;
 float OnSolarThreshold = 24.0;
 unsigned long lastPressed = 0;
-#pragma endregion
 
 RenogyController *renogyController = RenogyController::GetInstance();
 WiFiController *wifiController = WiFiController::GetInstance();
@@ -59,7 +57,7 @@ void ToggleMode()
   }
 }
 
-void ICACHE_RAM_ATTR IntCallback()
+void IRAM_ATTR IntCallback()
 {
   if (digitalRead(MANUAL_PIN))
   {
@@ -104,11 +102,11 @@ void loop()
       if (!digitalRead(MANUAL_PIN))
       {
         float batteryVoltage = renogyController->GetBatteryVoltage();
-        if (batteryVoltage < OnGridThreshold && batteryVoltage > 7.0) // to protect from bad reads, etc
+        if ((batteryVoltage < OnGridThreshold) && (batteryVoltage > 7.0)) // to protect from bad reads, etc
         {
           ToMainMode();
         }
-        else if (batteryVoltage > OnSolarThreshold)
+        if (batteryVoltage > OnSolarThreshold)
         {
           ToSolarMode();
         }

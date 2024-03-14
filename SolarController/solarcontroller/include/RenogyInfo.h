@@ -13,9 +13,9 @@ public:
     uint8_t dischargingCurrentRating; // amps
     uint8_t productType;
     char productModel[17];
-    char softwareVersion[7];
-    char hardwareVersion[7];
-    char serialNumber[7];
+    char softwareVersion[11];
+    char hardwareVersion[11];
+    char serialNumber[11];
     uint8_t modbusAddress;
 
     char *toJSON();

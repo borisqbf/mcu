@@ -88,7 +88,6 @@ bool RenogyController::RenogyReadDataRegisters()
 {
     uint8_t result;
     uint16_t dataRegisters[numDataRegisters];
-    uint16_t rawData;
 
     result = node.readHoldingRegisters(0x100, numDataRegisters);
 
@@ -212,11 +211,11 @@ bool RenogyController::RenogyReadInfoRegisters()
         strncpy(renogyInfo.productModel, modelNo, 16);
         renogyInfo.productModel[16] = '\0';
 
-        sprintf(renogyInfo.softwareVersion, "%d%d", infoRegisters[10], infoRegisters[11]);
+        snprintf(renogyInfo.softwareVersion, sizeof(renogyInfo.softwareVersion), "%d%d", infoRegisters[10], infoRegisters[11]);
         renogyInfo.softwareVersion[6] = '\0';
-        sprintf(renogyInfo.hardwareVersion, "%d%d", infoRegisters[12], infoRegisters[13]);
+        snprintf(renogyInfo.hardwareVersion, sizeof(renogyInfo.hardwareVersion), "%d%d", infoRegisters[12], infoRegisters[13]);
         renogyInfo.hardwareVersion[6] = '\0';
-        sprintf(renogyInfo.serialNumber, "%d%d", infoRegisters[14], infoRegisters[15]);
+        snprintf(renogyInfo.serialNumber, sizeof(renogyInfo.serialNumber), "%d%d", infoRegisters[14], infoRegisters[15]);
         renogyInfo.serialNumber[6] = '\0';
 
         renogyInfo.modbusAddress = infoRegisters[16] % 256; // low byte

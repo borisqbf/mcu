@@ -432,13 +432,15 @@ void IrrigationController::GetStatus()
 int IrrigationController::GetHumidityImp()
 {
     int h = 0;
-
+    digitalWrite(humidityPowerPin, HIGH);
+    delay(1000);
     for (int i = 0; i < 100; i++)
     {
         h += analogRead(humidityInputPin);
         delay(10);
     }
     return h / 100;
+    digitalWrite(humidityPowerPin, LOW);
 }
 
 void IrrigationController::GetHumidity()

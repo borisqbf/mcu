@@ -124,6 +124,7 @@ bool MqttController::Connect()
             return false;
         }
     }
+    return false;
 }
 
 void MqttController::SetDateTime()
