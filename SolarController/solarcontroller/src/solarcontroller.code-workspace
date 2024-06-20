@@ -1,0 +1,27 @@
+{
+	"folders": [
+		{
+			"path": ".."
+		},
+		{
+			"name": "240314-110255-d1_wroom_02",
+			"path": "../../../../../Users/boris/Documents/PlatformIO/Projects/240314-110255-d1_wroom_02"
+		}
+	],
+	"settings": {
+		"files.associations": {
+			"string": "cpp",
+			"vector": "cpp",
+			"limits": "cpp",
+			"utility": "cpp",
+			"array": "cpp",
+			"deque": "cpp",
+			"list": "cpp",
+			"unordered_map": "cpp",
+			"string_view": "cpp",
+			"initializer_list": "cpp",
+			"ranges": "cpp",
+			"span": "cpp"
+		}
+	}
+}

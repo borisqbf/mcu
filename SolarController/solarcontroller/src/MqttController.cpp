@@ -11,27 +11,25 @@ MqttController *MqttController::GetInstance()
 
 MqttController::MqttController()
 {
-    delayedConnectRequested = false;
+    mqtt = nullptr;
     lastTimeTelemetrySent = 0;
     wifiController = WiFiController::GetInstance();
 }
 
 bool MqttController::PublishMessage(const char *msg)
 {
-    if (delayedConnectRequested && (WiFi.status() == WL_CONNECTED))
-    {
-        delayedConnectRequested = false;
-        Connect();
-    }
-
     if (WiFi.status() == WL_CONNECTED)
     {
+        if (!mqtt->connected())
+        {
+            if (!Connect())
+                return false;
+        }
         return mqtt->publish(family, msg);
     }
     else
     {
-        wifiController->ForceReconnection();
-        return false;
+         return false;
     }
 }
 
@@ -104,6 +102,9 @@ bool MqttController::Connect()
     // Integrate the cert store with this connection
     bear->setCertStore(&certStore);
 
+    if (mqtt != nullptr)
+        delete mqtt;
+        
     mqtt = new PubSubClient(*bear);
 
     mqtt->setServer(mqttServer, mqttPort);

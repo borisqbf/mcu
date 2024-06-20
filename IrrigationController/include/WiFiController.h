@@ -32,6 +32,9 @@ private:
     static WiFiUDP Udp;
     static Timezone ausET;
 
+    static unsigned long previousMillis;
+    static unsigned long interval;
+
     static unsigned int localPort; // local port to listen for UDP packets
 
     static void SendNTPpacket(const char *ntpSrv);

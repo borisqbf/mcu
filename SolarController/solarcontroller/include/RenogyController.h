@@ -13,7 +13,7 @@ const uint32_t numInfoRegisters = 17;
 const uint8_t modbusAddress = 255;
 const int modbusBaudRate = 9600;
 
-const int modbusPollingPeriodicity = 1 * 60 * 1000; // report state every xx minutes
+const int modbusPollingPeriodicity = 0.5 * 60 * 1000; // report state every xx minutes
 
 
 const uint8_t modbusUnknownError = 10;

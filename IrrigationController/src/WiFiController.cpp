@@ -6,6 +6,9 @@ WiFiController *WiFiController::theInstance = NULL;
 unsigned int WiFiController::localPort = 2390; // local port to listen for UDP packets
 byte WiFiController::packetBuffer[NTP_PACKET_SIZE];
 
+unsigned long WiFiController::previousMillis = 0;
+unsigned long WiFiController::interval = 60000;
+
 WiFiUDP WiFiController::Udp;
 // Australia Eastern Time Zone (Sydney, Melbourne)
 
@@ -42,6 +45,7 @@ void WiFiController::Setup()
         delay(1000);
         Serial.print(".");
     }
+
     PrintWifiStatus();
     Udp.begin(localPort);
 
@@ -51,6 +55,15 @@ void WiFiController::Setup()
 
 void WiFiController::ProcessMainLoop()
 {
+unsigned long currentMillis = millis();
+  // if WiFi is down, try reconnecting every CHECK_WIFI_TIME seconds
+  if ((WiFi.status() != WL_CONNECTED) && (currentMillis - previousMillis >=interval)) {
+    Serial.print(millis());
+    Serial.println("Reconnecting to WiFi...");
+    WiFi.disconnect();
+    WiFi.reconnect();
+    previousMillis = currentMillis;
+  }
 }
 
 time_t WiFiController::GetNTPTime()

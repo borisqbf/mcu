@@ -3,6 +3,7 @@
 
 static WiFiController theInstance;
 
+
 WiFiController* WiFiController::GetInstance()
 {
     return &theInstance;
@@ -10,7 +11,8 @@ WiFiController* WiFiController::GetInstance()
 
 WiFiController::WiFiController()
 {
-    lastTimeWiFiSuccess = 0;
+    previousMillis = 0;
+    interval = 60000;
 }
 
 void WiFiController::onWifiConnect(const WiFiEventStationModeGotIP &event)
@@ -19,7 +21,6 @@ void WiFiController::onWifiConnect(const WiFiEventStationModeGotIP &event)
     Serial1.print("IP address: ");
     Serial1.println(WiFi.localIP());
     LEDStatusReporter::ReportWiFi(wifiConnected);
-    theInstance.lastTimeWiFiSuccess = millis();
 }
 
 void WiFiController::onWifiDisconnect(const WiFiEventStationModeDisconnected &event)
@@ -65,15 +66,15 @@ bool WiFiController::Setup()
     }
 }
 
-void WiFiController::ForceReconnection()
+void WiFiController::ProcessMainLoop()
 {
-    if (millis() - lastTimeWiFiSuccess > noWiFiTimeLimit)
-    {
-        Serial1.println("Giving up to reconnect Wi-Fi - rebooting ESP");
-        ESP.restart();
-    }
-    else
-    {
-        WiFi.reconnect();
-    }
+    unsigned long currentMillis = millis();
+  // if WiFi is down, try reconnecting every interval seconds
+  if ((WiFi.status() != WL_CONNECTED) && (currentMillis - previousMillis >=interval)) {
+    Serial.print(millis());
+    Serial.println("Reconnecting to WiFi...");
+    WiFi.disconnect();
+    WiFi.reconnect();
+    previousMillis = currentMillis;
+  }
 }

@@ -209,14 +209,11 @@ bool RenogyController::RenogyReadInfoRegisters()
         renogyInfo.productType = rawData % 256; // low byte
         char *modelNo = (char *)&(infoRegisters[2]);
         strncpy(renogyInfo.productModel, modelNo, 16);
-        renogyInfo.productModel[16] = '\0';
+        renogyInfo.productModel[sizeof(renogyInfo.productModel) - 1] = '\0';
 
         snprintf(renogyInfo.softwareVersion, sizeof(renogyInfo.softwareVersion), "%d%d", infoRegisters[10], infoRegisters[11]);
-        renogyInfo.softwareVersion[6] = '\0';
         snprintf(renogyInfo.hardwareVersion, sizeof(renogyInfo.hardwareVersion), "%d%d", infoRegisters[12], infoRegisters[13]);
-        renogyInfo.hardwareVersion[6] = '\0';
         snprintf(renogyInfo.serialNumber, sizeof(renogyInfo.serialNumber), "%d%d", infoRegisters[14], infoRegisters[15]);
-        renogyInfo.serialNumber[6] = '\0';
 
         renogyInfo.modbusAddress = infoRegisters[16] % 256; // low byte
         return true;

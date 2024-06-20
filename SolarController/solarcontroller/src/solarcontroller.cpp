@@ -17,8 +17,8 @@ enum PowerMode : byte
 };
 
 PowerMode mode = OnSolar;
-float OnGridThreshold = 21;
-float OnSolarThreshold = 24.0;
+float OnGridThreshold = 23.5;
+float OnSolarThreshold = 25.0;
 unsigned long lastPressed = 0;
 
 RenogyController *renogyController = RenogyController::GetInstance();
@@ -27,8 +27,6 @@ MqttController *mqttController = MqttController::GetInstance();
 
 void ToSolarMode()
 {
-  if (mode == OnSolar)
-    return;
   mqttController->PublishMessage("Switching to solar");
   mode = OnSolar;
   digitalWrite(MODE_PIN, HIGH);
@@ -37,8 +35,6 @@ void ToSolarMode()
 
 void ToMainMode()
 {
-  if (mode == OnGrid)
-    return;
   mqttController->PublishMessage("Switching to mains power");
   mode = OnGrid;
   digitalWrite(MODE_PIN, LOW);
@@ -83,15 +79,14 @@ void setup()
 
   LEDStatusReporter::Setup();
   renogyController->Setup();
-  if (wifiController->Setup())
-    mqttController->Connect();
-  else
-    mqttController->RequestDelayedConnect();
+  wifiController->Setup();
+  mqttController->Connect();
 }
 
 void loop()
 {
-  mqttController->Loop();
+  wifiController->ProcessMainLoop();
+  mqttController->ProcessMainLoop();
 
   if (renogyController->IsUpdateRequired())
   {

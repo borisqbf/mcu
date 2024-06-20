@@ -17,7 +17,7 @@ class WiFiController
 {
     public:
         bool Setup();
-        void ForceReconnection();
+        void ProcessMainLoop();
         static WiFiController *GetInstance();
         WiFiController();
 
@@ -29,9 +29,11 @@ class WiFiController
         static void onWifiConnect(const WiFiEventStationModeGotIP &event);
         static void onWifiDisconnect(const WiFiEventStationModeDisconnected &event);
         // WI-FI settings
-        const char *ssid = "your SID";
-        const char *pass = "XXXX";
+        const char *ssid = "y-Dacha";
+        const char *pass = ".QbfReward00+";
         unsigned long lastTimeWiFiSuccess;
+        unsigned long previousMillis;
+        unsigned long interval;
 };
 
 #endif

@@ -94,6 +94,7 @@ private:
 
     bool CheckStartTime();
     void SetNextStartTime();
+    static void SkipToNextImp();
     static void SkipToNext();
     static void SkipDayImp();
     static void SkipDay();
