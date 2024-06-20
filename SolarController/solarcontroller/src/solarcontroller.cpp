@@ -16,7 +16,7 @@ enum PowerMode : byte
   OnGrid = 1
 };
 
-PowerMode mode = OnSolar;
+PowerMode mode = OnGrid;
 float OnGridThreshold = 23.5;
 float OnSolarThreshold = 25.0;
 unsigned long lastPressed = 0;
@@ -76,7 +76,7 @@ void setup()
   digitalWrite(RELAY_PIN, HIGH);
   digitalWrite(MODE_PIN, HIGH); // Initial state is on solar so green LED is on
   attachInterrupt(digitalPinToInterrupt(TOGGLE_PIN), IntCallback, RISING);
-
+  ToMainMode();
   LEDStatusReporter::Setup();
   renogyController->Setup();
   wifiController->Setup();

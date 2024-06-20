@@ -287,9 +287,9 @@ bool RenogyController::GetRenogyData()
         Serial1.println(renogyData.maxChargePowerToday);
         Serial1.print("Max discharging power today: ");
         Serial1.println(renogyData.maxDischargePowerToday);
-        Serial1.print("Charging amphours today: ");
+        Serial1.print("Charging amp-hours today: ");
         Serial1.println(renogyData.chargeAmphoursToday);
-        Serial1.print("Discharging amphours today: ");
+        Serial1.print("Discharging amp-hours today: ");
         Serial1.println(renogyData.dischargeAmphoursToday);
         Serial1.print("Power generated today: ");
         Serial1.println(renogyData.powerGenerationToday);
@@ -301,9 +301,9 @@ bool RenogyController::GetRenogyData()
         Serial1.println(renogyData.totalNumBatteryFullCharges);
         Serial1.print("Total Battery overDischarges: ");
         Serial1.println(renogyData.totalNumBatteryOverDischarges);
-        Serial1.print("Total charging amphours: ");
+        Serial1.print("Total charging amp-hours: ");
         Serial1.println(renogyData.totalChargingAmphours);
-        Serial1.print("Total discharging amphours: ");
+        Serial1.print("Total discharging amp-hours: ");
         Serial1.println(renogyData.totalDischargingAmphours);
         Serial1.print("Cumulative Power Generation: ");
         Serial1.println(renogyData.cumulativePowerGeneration);

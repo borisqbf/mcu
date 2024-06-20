@@ -5,7 +5,7 @@
 char* RenogyData::toJSON()
 {
     memset(buffer, '\0', sizeof(buffer));
-    sprintf(buffer, "{\n\"BatV\":\"%.2f\",\n"
+    snprintf(buffer, sizeof(buffer), "{\n\"BatV\":\"%.2f\",\n"
                     "\"BatA\":\"%.2f\",\n"
                     "\"PanelV\":\"%.2f\",\n"
                     "\"PanelA\":\"%.2f\",\n"
