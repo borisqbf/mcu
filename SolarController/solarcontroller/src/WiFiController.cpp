@@ -71,8 +71,8 @@ void WiFiController::ProcessMainLoop()
     unsigned long currentMillis = millis();
   // if WiFi is down, try reconnecting every interval seconds
   if ((WiFi.status() != WL_CONNECTED) && (currentMillis - previousMillis >=interval)) {
-    Serial.print(millis());
-    Serial.println("Reconnecting to WiFi...");
+    Serial1.print(millis());
+    Serial1.println("Reconnecting to WiFi...");
     WiFi.disconnect();
     WiFi.reconnect();
     previousMillis = currentMillis;
