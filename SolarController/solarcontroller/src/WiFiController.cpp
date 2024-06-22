@@ -34,8 +34,8 @@ void WiFiController::onWifiDisconnect(const WiFiEventStationModeDisconnected &ev
 bool WiFiController::Setup()
 {
     // Register event handlers
-    wifiConnectHandler = WiFi.onStationModeGotIP(onWifiConnect);
-    wifiDisconnectHandler = WiFi.onStationModeDisconnected(onWifiDisconnect);
+    //wifiConnectHandler = WiFi.onStationModeGotIP(onWifiConnect);
+    //wifiDisconnectHandler = WiFi.onStationModeDisconnected(onWifiDisconnect);
 
     WiFi.mode(WIFI_STA);
     WiFi.begin(ssid, pass);
