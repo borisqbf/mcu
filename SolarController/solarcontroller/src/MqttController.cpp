@@ -15,6 +15,22 @@ MqttController::MqttController()
     lastTimeTelemetrySent = 0;
     wifiController = WiFiController::GetInstance();
 }
+bool MqttController::Setup()
+{
+    LittleFS.begin();
+    randomSeed(micros());
+    SetDateTime();
+    // IP address could have been change - update mqtt client
+
+    int numCerts = certStore.initCertStore(LittleFS, PSTR("/certs.idx"), PSTR("/certs.ar"));
+    Serial1.printf("Number of CA certs read: %d\n", numCerts);
+    if (numCerts == 0)
+    {
+        Serial1.printf("No certs found. Did you run certs-from-mozilla.py and upload the LittleFS directory before running?\n");
+        return false; // Can't connect to anything w/o certs!
+    }
+    return true;
+}
 
 bool MqttController::PublishMessage(const char *msg)
 {
@@ -85,19 +101,6 @@ void MqttController::HandleMQTTError(int errorCode)
 
 bool MqttController::Connect()
 {
-    LittleFS.begin();
-    randomSeed(micros());
-    SetDateTime();
-    // IP address could have been change - update mqtt client
-
-    int numCerts = certStore.initCertStore(LittleFS, PSTR("/certs.idx"), PSTR("/certs.ar"));
-    Serial1.printf("Number of CA certs read: %d\n", numCerts);
-    if (numCerts == 0)
-    {
-        Serial1.printf("No certs found. Did you run certs-from-mozilla.py and upload the LittleFS directory before running?\n");
-        return false; // Can't connect to anything w/o certs!
-    }
-
     BearSSL::WiFiClientSecure *bear = new BearSSL::WiFiClientSecure();
     // Integrate the cert store with this connection
     bear->setCertStore(&certStore);

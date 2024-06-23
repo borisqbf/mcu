@@ -31,6 +31,7 @@ class MqttController
 {
 public:
     MqttController();
+    bool Setup();
     bool Connect();
 
     bool PublishMessage(const char *msg);

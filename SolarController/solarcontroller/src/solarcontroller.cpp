@@ -80,6 +80,7 @@ void setup()
   LEDStatusReporter::Setup();
   renogyController->Setup();
   wifiController->Setup();
+  mqttController->Setup(); 
   mqttController->Connect();
 }
 

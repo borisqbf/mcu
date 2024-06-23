@@ -70,11 +70,31 @@ void WiFiController::ProcessMainLoop()
 {
     unsigned long currentMillis = millis();
   // if WiFi is down, try reconnecting every interval seconds
-  if ((WiFi.status() != WL_CONNECTED) && (currentMillis - previousMillis >=interval)) {
-    Serial1.print(millis());
+  if ((WiFi.status() != WL_CONNECTED) && (currentMillis - previousMillis >=interval)) 
+  {
+    LEDStatusReporter::ReportWiFi(wifiConnecting);
     Serial1.println("Reconnecting to WiFi...");
-    WiFi.disconnect();
-    WiFi.reconnect();
+    WiFi.begin(ssid, pass);
+
+    // max wait to connect 1 minute
+
+    uint8_t i = 0;
+    while ((WiFi.status() != WL_CONNECTED) && (i < 60))
+    {
+        i++;
+        LEDStatusReporter::ReportWiFi(wifiConnecting);
+        Serial1.print("*");
+        delay(1000);
+    }
+    if (WiFi.status() == WL_CONNECTED)
+    {
+        WiFi.setAutoReconnect(true);
+        WiFi.persistent(true);
+        Serial1.println("Wi-Fi connection Successful");
+        Serial1.print("The IP Address of ESP8266 Module is: ");
+        Serial1.println(WiFi.localIP()); // Print the IP address
+        LEDStatusReporter::ReportWiFi(wifiConnected);
+    }
     previousMillis = currentMillis;
   }
 }
