@@ -55,15 +55,33 @@ void WiFiController::Setup()
 
 void WiFiController::ProcessMainLoop()
 {
-unsigned long currentMillis = millis();
-  // if WiFi is down, try reconnecting every CHECK_WIFI_TIME seconds
-  if ((WiFi.status() != WL_CONNECTED) && (currentMillis - previousMillis >=interval)) {
-    Serial.print(millis());
-    Serial.println("Reconnecting to WiFi...");
-    WiFi.disconnect();
-    WiFi.reconnect();
-    previousMillis = currentMillis;
-  }
+    unsigned long currentMillis = millis();
+    // if WiFi is down, try reconnecting every CHECK_WIFI_TIME seconds
+    if ((WiFi.status() != WL_CONNECTED) && (currentMillis - previousMillis >= interval))
+    {
+        NotificationController *n = NotificationController::GetInstance();
+        n->Display("Disconnected", "Reconnecting...");
+        WiFi.begin(ssid, pass);
+        Serial.println("Reconnecting to WiFi...");
+        uint8_t i = 0;
+        while ((WiFi.status() != WL_CONNECTED) && (i < 60))
+        {
+            i++;
+            Serial.print(".");
+            delay(1000);
+        }
+        if (WiFi.status() == WL_CONNECTED)
+        {
+            WiFi.setAutoReconnect(true);
+            WiFi.persistent(true);
+            PrintWifiStatus();
+            Udp.begin(localPort);
+
+            setSyncProvider(GetNTPTime);
+            setSyncInterval(SECS_PER_HOUR); // every hour
+        }
+        previousMillis = currentMillis;
+    }
 }
 
 time_t WiFiController::GetNTPTime()
@@ -115,7 +133,6 @@ void WiFiController::PrintWifiStatus()
     NotificationController *n = NotificationController::GetInstance();
     n->Display("IP Address", ip.toString().c_str());
 }
-
 
 void WiFiController::SendNTPpacket(const char *ntpSrv)
 {
