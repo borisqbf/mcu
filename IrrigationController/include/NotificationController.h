@@ -11,7 +11,7 @@
 
 /* The log in credentials */
 #define AUTHOR_EMAIL "borisqbf@gmail.com"
-#define AUTHOR_PASSWORD "wxumeztmydfrakhd"
+#define AUTHOR_PASSWORD "zovw uzuv xfxq kkui"
 #define RECIPIENT_EMAIL "boris_qbf@hotmail.com"
 
 class NotificationController

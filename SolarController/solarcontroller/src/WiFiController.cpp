@@ -3,8 +3,7 @@
 
 static WiFiController theInstance;
 
-
-WiFiController* WiFiController::GetInstance()
+WiFiController *WiFiController::GetInstance()
 {
     return &theInstance;
 };
@@ -34,8 +33,8 @@ void WiFiController::onWifiDisconnect(const WiFiEventStationModeDisconnected &ev
 bool WiFiController::Setup()
 {
     // Register event handlers
-    //wifiConnectHandler = WiFi.onStationModeGotIP(onWifiConnect);
-    //wifiDisconnectHandler = WiFi.onStationModeDisconnected(onWifiDisconnect);
+    // wifiConnectHandler = WiFi.onStationModeGotIP(onWifiConnect);
+    // wifiDisconnectHandler = WiFi.onStationModeDisconnected(onWifiDisconnect);
 
     WiFi.mode(WIFI_STA);
     WiFi.begin(ssid, pass);
@@ -66,35 +65,51 @@ bool WiFiController::Setup()
     }
 }
 
+bool WiFiController::IsConnected()
+{
+    return (WiFi.status() == WL_CONNECTED) && CheckInternet();
+}
+
 void WiFiController::ProcessMainLoop()
 {
     unsigned long currentMillis = millis();
-  // if WiFi is down, try reconnecting every interval seconds
-  if ((WiFi.status() != WL_CONNECTED) && (currentMillis - previousMillis >=interval)) 
-  {
-    LEDStatusReporter::ReportWiFi(wifiConnecting);
-    Serial1.println("Reconnecting to WiFi...");
-    WiFi.begin(ssid, pass);
-
-    // max wait to connect 1 minute
-
-    uint8_t i = 0;
-    while ((WiFi.status() != WL_CONNECTED) && (i < 60))
+    // if WiFi is down, try reconnecting every interval seconds
+    if ((WiFi.status() != WL_CONNECTED) && (currentMillis - previousMillis >= interval))
     {
-        i++;
         LEDStatusReporter::ReportWiFi(wifiConnecting);
-        Serial1.print("*");
-        delay(1000);
+        Serial1.println("Reconnecting to WiFi...");
+        WiFi.begin(ssid, pass);
+
+        // max wait to connect 1 minute
+
+        uint8_t i = 0;
+        while ((WiFi.status() != WL_CONNECTED) && (i < 60))
+        {
+            i++;
+            LEDStatusReporter::ReportWiFi(wifiConnecting);
+            Serial1.print("*");
+            delay(1000);
+        }
+        if (WiFi.status() == WL_CONNECTED)
+        {
+            WiFi.setAutoReconnect(true);
+            WiFi.persistent(true);
+            Serial1.println("Wi-Fi connection Successful");
+            Serial1.print("The IP Address of ESP8266 Module is: ");
+            Serial1.println(WiFi.localIP()); // Print the IP address
+            LEDStatusReporter::ReportWiFi(wifiConnected);
+        }
+        previousMillis = currentMillis;
     }
-    if (WiFi.status() == WL_CONNECTED)
+}
+
+bool WiFiController::CheckInternet()
+{
+    WiFiClient client;
+    if (client.connect("www.google.com", 80))
     {
-        WiFi.setAutoReconnect(true);
-        WiFi.persistent(true);
-        Serial1.println("Wi-Fi connection Successful");
-        Serial1.print("The IP Address of ESP8266 Module is: ");
-        Serial1.println(WiFi.localIP()); // Print the IP address
-        LEDStatusReporter::ReportWiFi(wifiConnected);
+        client.stop();
+        return true;
     }
-    previousMillis = currentMillis;
-  }
+    return false;
 }

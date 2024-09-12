@@ -34,7 +34,7 @@ bool MqttController::Setup()
 
 bool MqttController::PublishMessage(const char *msg)
 {
-    if (WiFi.status() == WL_CONNECTED)
+    if (wifiController->IsConnected())
     {
         if (!mqtt->connected())
         {
@@ -45,7 +45,18 @@ bool MqttController::PublishMessage(const char *msg)
     }
     else
     {
-         return false;
+        return false;
+    }
+}
+
+void MqttController::ProcessMainLoop()
+{
+    if (wifiController->IsConnected())
+    {
+        if (mqtt->connected())
+        {
+            mqtt->loop();
+        }
     }
 }
 
@@ -107,7 +118,7 @@ bool MqttController::Connect()
 
     if (mqtt != nullptr)
         delete mqtt;
-        
+
     mqtt = new PubSubClient(*bear);
 
     mqtt->setServer(mqttServer, mqttPort);
@@ -133,23 +144,26 @@ bool MqttController::Connect()
 
 void MqttController::SetDateTime()
 {
-    // You can use your own timezone, but the exact time is not used at all.
-    // Only the date is needed for validating the certificates.
-    configTime(TZ_Australia_Melbourne, "pool.ntp.org", "time.nist.gov");
-
-    Serial1.print("Waiting for NTP time sync: ");
-    time_t now = time(nullptr);
-    while (now < 8 * 3600 * 2)
+    if (wifiController->IsConnected())
     {
-        delay(100);
-        Serial1.print(".");
-        now = time(nullptr);
-    }
-    Serial1.println();
+        // You can use your own timezone, but the exact time is not used at all.
+        // Only the date is needed for validating the certificates.
+        configTime(TZ_Australia_Melbourne, "pool.ntp.org", "time.nist.gov");
 
-    struct tm timeinfo;
-    gmtime_r(&now, &timeinfo);
-    Serial1.printf("%s %s", tzname[0], asctime(&timeinfo));
+        Serial1.print("Waiting for NTP time sync: ");
+        time_t now = time(nullptr);
+        while (now < 8 * 3600 * 2)
+        {
+            delay(100);
+            Serial1.print(".");
+            now = time(nullptr);
+        }
+        Serial1.println();
+
+        struct tm timeinfo;
+        gmtime_r(&now, &timeinfo);
+        Serial1.printf("%s %s", tzname[0], asctime(&timeinfo));
+    }
 }
 
 bool MqttController::IsUpdateRequired()

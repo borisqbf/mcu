@@ -17,13 +17,15 @@ class WiFiController
 {
     public:
         bool Setup();
+        bool IsConnected();
         void ProcessMainLoop();
+
         static WiFiController *GetInstance();
         WiFiController();
 
     private:
         WiFiClientSecure client;
-
+        bool CheckInternet();
         WiFiEventHandler wifiConnectHandler;
         WiFiEventHandler wifiDisconnectHandler;
         static void onWifiConnect(const WiFiEventStationModeGotIP &event);

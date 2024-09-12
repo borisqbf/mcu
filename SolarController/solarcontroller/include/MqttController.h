@@ -35,7 +35,7 @@ public:
     bool Connect();
 
     bool PublishMessage(const char *msg);
-    void ProcessMainLoop() { mqtt->loop(); };
+    void ProcessMainLoop();
     void HandleMQTTError(){HandleMQTTError(mqtt->state());};
     bool IsUpdateRequired();
     static MqttController *GetInstance();
