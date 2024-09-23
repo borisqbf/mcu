@@ -100,7 +100,9 @@ void NotificationController::Alert(const char *alert)
     }
     /* Start sending Email and close the session */
     if (!MailClient.sendMail(&smtp, &message))
+    {
         MailClient.printf("Error, Status Code: %d, Error Code: %d, Reason: %s\n", smtp.statusCode(), smtp.errorCode(), smtp.errorReason().c_str());
+    }
 }
 
 void NotificationController::Display(const char *line1, const char *line2)

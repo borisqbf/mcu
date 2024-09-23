@@ -38,6 +38,20 @@ bool WiFiController::Setup()
 
     WiFi.mode(WIFI_STA);
     WiFi.begin(ssid, pass);
+    AttemptToConnectWiFi();
+    if (WiFi.status() == WL_CONNECTED)
+    {
+        ConfirmWiFiConnected();
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
+void WiFiController::AttemptToConnectWiFi()
+{
 
     // max wait to connect 1 minute
 
@@ -49,20 +63,16 @@ bool WiFiController::Setup()
         Serial1.print("*");
         delay(1000);
     }
-    if (WiFi.status() == WL_CONNECTED)
-    {
-        WiFi.setAutoReconnect(true);
-        WiFi.persistent(true);
-        Serial1.println("Wi-Fi connection Successful");
-        Serial1.print("The IP Address of ESP8266 Module is: ");
-        Serial1.println(WiFi.localIP()); // Print the IP address
-        LEDStatusReporter::ReportWiFi(wifiConnected);
-        return true;
-    }
-    else
-    {
-        return false;
-    }
+}
+
+void WiFiController::ConfirmWiFiConnected()
+{
+    WiFi.setAutoReconnect(true);
+    WiFi.persistent(true);
+    Serial1.println("Wi-Fi connection Successful");
+    Serial1.print("The IP Address of ESP8266 Module is: ");
+    Serial1.println(WiFi.localIP()); // Print the IP address
+    LEDStatusReporter::ReportWiFi(wifiConnected);
 }
 
 bool WiFiController::IsConnected()
@@ -80,24 +90,11 @@ void WiFiController::ProcessMainLoop()
         Serial1.println("Reconnecting to WiFi...");
         WiFi.begin(ssid, pass);
 
-        // max wait to connect 1 minute
+        AttemptToConnectWiFi();
 
-        uint8_t i = 0;
-        while ((WiFi.status() != WL_CONNECTED) && (i < 60))
-        {
-            i++;
-            LEDStatusReporter::ReportWiFi(wifiConnecting);
-            Serial1.print("*");
-            delay(1000);
-        }
         if (WiFi.status() == WL_CONNECTED)
         {
-            WiFi.setAutoReconnect(true);
-            WiFi.persistent(true);
-            Serial1.println("Wi-Fi connection Successful");
-            Serial1.print("The IP Address of ESP8266 Module is: ");
-            Serial1.println(WiFi.localIP()); // Print the IP address
-            LEDStatusReporter::ReportWiFi(wifiConnected);
+            ConfirmWiFiConnected();
         }
         previousMillis = currentMillis;
     }

@@ -27,7 +27,10 @@ MqttController *mqttController = MqttController::GetInstance();
 
 void ToSolarMode()
 {
-  mqttController->PublishMessage("Switching to solar");
+  if (mode == OnGrid)
+  {
+    mqttController->PublishMessage("Switching to solar");
+  }
   mode = OnSolar;
   digitalWrite(MODE_PIN, HIGH);
   digitalWrite(RELAY_PIN, HIGH);
@@ -35,7 +38,10 @@ void ToSolarMode()
 
 void ToMainMode()
 {
-  mqttController->PublishMessage("Switching to mains power");
+  if (mode != OnGrid)
+  {
+    mqttController->PublishMessage("Switching to mains power");
+  }
   mode = OnGrid;
   digitalWrite(MODE_PIN, LOW);
   digitalWrite(RELAY_PIN, LOW);
@@ -80,7 +86,7 @@ void setup()
   LEDStatusReporter::Setup();
   renogyController->Setup();
   wifiController->Setup();
-  mqttController->Setup(); 
+  mqttController->Setup();
   mqttController->Connect();
 }
 
@@ -112,7 +118,7 @@ void loop()
   if (mqttController->IsUpdateRequired())
   {
     Serial1.println("Sending telemetry");
- 
+
     if (renogyController->PublishRenogyData())
     {
       Serial1.println("Telemetry sent");
