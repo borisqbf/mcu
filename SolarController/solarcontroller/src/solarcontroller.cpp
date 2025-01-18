@@ -17,8 +17,8 @@ enum PowerMode : byte
 };
 
 PowerMode mode = OnGrid;
-float OnGridThreshold = 23.5;
-float OnSolarThreshold = 25.0;
+float OnGridThreshold = 21.0;
+float OnSolarThreshold = 24.0;
 unsigned long lastPressed = 0;
 
 RenogyController *renogyController = RenogyController::GetInstance();
